@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en-NZ">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Landscaping Projects NZ | Portfolio | On Point Services Ltd</title>
+<meta name="description" content="A selection of recent residential and commercial landscaping projects across Auckland. Garden builds, maintenance contracts, hedge work and outdoor construction." />
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/styles.css" />
+<style>
+  .filter-bar {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 40px;
+    padding: 20px;
+    border: 1px solid var(--line-soft);
+    border-radius: 999px;
+    background: var(--ink-2);
+    width: fit-content;
+  }
+  .filter-bar [data-filter] {
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--bone-dim);
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .filter-bar [data-filter]:hover { color: var(--bone); }
+  .filter-bar [data-filter].active {
+    background: var(--gold);
+    color: var(--ink);
+    font-weight: 700;
+  }
+  @media (max-width: 700px) { .filter-bar { width: 100%; overflow-x: auto; flex-wrap: nowrap; } }
+</style>
+</head>
+<body>
+
+<header class="nav nav-mobile">
+  <div class="container nav-inner">
+    <a class="nav-brand" href="index.html"><img class="logo-mark" src="assets/logo.svg" alt="" /><span class="nav-brand-text">On Point<small>Services Ltd</small></span></a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="index.html">Home</a>
+      <a href="services.html">Services</a>
+      <a href="residential.html">Residential</a>
+      <a href="commercial.html">Commercial</a>
+      <a href="projects.html" class="active">Projects</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <a href="tel:+64212255533" class="nav-cta nav-cta-desktop"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3h3l2 4-2 1c1 2 3 4 5 5l1-2 4 2v3a1 1 0 0 1-1 1A12 12 0 0 1 3 4a1 1 0 0 1 1-1Z"/></svg>021 CALL JEFF</a>
+    <button class="nav-toggle" aria-label="Open navigation"><span></span><span></span><span></span></button>
+  </div>
+</header>
+
+<section class="page-header">
+  <div class="topo-bg"></div>
+  <div class="container reveal">
+    <div class="crumbs"><a href="index.html">Home</a><span class="sep">/</span><span>Projects</span></div>
+    <h1>The <span class="gold">work</span><br>speaks for itself.</h1>
+    <p class="lede">A small slice of recent residential, commercial, design, build and maintenance work from across Auckland. Filter by what you are looking for.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+
+    <div class="filter-bar reveal" role="tablist" aria-label="Filter projects">
+      <button data-filter="all" class="active">All work</button>
+      <button data-filter="residential">Residential</button>
+      <button data-filter="commercial">Commercial</button>
+      <button data-filter="design">Design</button>
+      <button data-filter="build">Build</button>
+      <button data-filter="maintain">Maintain</button>
+      <button data-filter="hedge">Hedge</button>
+    </div>
+
+    <div class="project-grid">
+
+      <a href="contact.html" class="project-card wide reveal" data-tags="residential build design">
+        <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=70" alt="Coastal courtyard rebuild" loading="lazy" />
+        <div class="project-card-overlay">
+          <span class="project-tag">Residential · Design + Build</span>
+          <h4>Coastal Courtyard Rebuild</h4>
+          <span class="loc">Auckland · 2026 · 8 weeks on site</span>
+        </div>
+      </a>
+
+      <a href="contact.html" class="project-card reveal" data-tags="commercial maintain hedge">
+        <img src="https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&w=1000&q=70" alt="Office grounds" loading="lazy" />
+        <div class="project-card-overlay">
+          <span class="project-tag">Commercial · Maintain</span>
+          <h4>Office Park Grounds</h4>
+          <span class="loc">North Shore · Ongoing</span>
+        </div>
+      </a>
+
+      <a href="contact.html" class="project-card reveal" data-tags="residential build design">
+        <img src="https://images.unsplash.com/photo-1598902108854-10e335adac99?auto=format&fit=crop&w=1000&q=70" alt="Backyard reset" loading="lazy" />
+        <div class="project-card-overlay">
+          <span class="project-tag">Residential · Design + Build</span>
+          <h4>Family Backyard Reset</h4>
+          <span class="loc">Mt Eden · 2025</span>
+        </div>
+      </a>
+
+      <a href="contact.html" class="project-card reveal" data-tags="residential build">
+        <img src="https://images.unsplash.com/photo-1469827160215-9d29e96e72f4?auto=format&fit=crop&w=1000&q=70" alt="Driveway and entry" loading="lazy" />
+        <div class="project-card-overlay">
+          <span class="project-tag">Residential · Hardscape</span>
+          <h4>Driveway & Entry</h4>
+          <span class="loc">Remuera · 2025</span>
+        </div>
+      </a>
+
+      <a href="contact.html" class="project-card reveal" data-tags="commercial maintain">
+        <img src="https://images.unsplash.com/photo-1469827160215-9d29e96e72f4?auto=format&fit=crop&w=1000&q=70" alt="Body corp lawn" loading="lazy" />
+        <div class="project-card-overlay">
+          <span class="project-tag">Commercial · Lawn</span>
+          <h4>Body Corporate Greens</h4>
+          <span class="loc">Manukau · Ongoing</span>
+        </div>
+      </a>
+
+      <a href="contact.html" class="project-card reveal" data-tags="residential hedge maintain">
+        <img src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=1000&q=70" alt="Boundary hedge" loading="lazy" />
+        <div class="project-card-overlay">
+          <span class="project-tag">Residential · Hedge</span>
+          <h4>6m Boundary Hedge</h4>
+          <span class="loc">Howick · 2025</span>
+        </div>
+      </a>
+
+      <a href="contact.html" class="project-card wide reveal" data-tags="commercial build design">
+        <img src="https://images.unsplash.com/photo-1600573472556-e636c2acda88?auto=format&fit=crop&w=1600&q=70" alt="Commercial entrance landscape" loading="lazy" />
+        <div class="project-card-overlay">
+          <span class="project-tag">Commercial · Build</span>
+          <h4>Retail Centre Forecourt</h4>
+          <span class="loc">Takapuna · 2025</span>
+        </div>
+      </a>
+
+      <a href="contact.html" class="project-card reveal" data-tags="residential build">
+        <img src="https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e?auto=format&fit=crop&w=1000&q=70" alt="Pool surround landscaping" loading="lazy" />
+        <div class="project-card-overlay">
+          <span class="project-tag">Residential · Build</span>
+          <h4>Pool Surround</h4>
+          <span class="loc">Ponsonby · 2025</span>
+        </div>
+      </a>
+
+      <a href="contact.html" class="project-card reveal" data-tags="residential design">
+        <img src="https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=1000&q=70" alt="Garden design plan" loading="lazy" />
+        <div class="project-card-overlay">
+          <span class="project-tag">Residential · Design</span>
+          <h4>Lifestyle Block Masterplan</h4>
+          <span class="loc">West Auckland · 2024</span>
+        </div>
+      </a>
+
+      <a href="contact.html" class="project-card reveal" data-tags="commercial build">
+        <img src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=1000&q=70" alt="School grounds" loading="lazy" />
+        <div class="project-card-overlay">
+          <span class="project-tag">Commercial · Build</span>
+          <h4>School Sensory Garden</h4>
+          <span class="loc">Devonport · 2024</span>
+        </div>
+      </a>
+
+      <a href="contact.html" class="project-card reveal" data-tags="residential build">
+        <img src="https://images.unsplash.com/photo-1597211684565-dca64d72bdfe?auto=format&fit=crop&w=1000&q=70" alt="Decking and outdoor area" loading="lazy" />
+        <div class="project-card-overlay">
+          <span class="project-tag">Residential · Build</span>
+          <h4>Hardwood Deck & Pergola</h4>
+          <span class="loc">Albany · 2024</span>
+        </div>
+      </a>
+
+      <a href="contact.html" class="project-card reveal" data-tags="commercial maintain hedge">
+        <img src="https://images.unsplash.com/photo-1487530811176-3780de880c2d?auto=format&fit=crop&w=1000&q=70" alt="Hotel grounds" loading="lazy" />
+        <div class="project-card-overlay">
+          <span class="project-tag">Commercial · Maintain</span>
+          <h4>Boutique Hotel Grounds</h4>
+          <span class="loc">Newmarket · Ongoing</span>
+        </div>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<section class="cta-strip">
+  <div class="container">
+    <h2><span class="outline">Could be</span><span>your project next.</span></h2>
+    <div class="cta-strip-actions">
+      <a href="tel:+64212255533" class="btn btn-primary">021 CALL JEFF</a>
+      <a href="contact.html" class="btn btn-ghost">Send a brief <span class="arrow"></span></a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand"><img class="logo-mark" src="assets/logo.svg" alt="" /><div class="footer-brand-text">On Point<small>Services Ltd</small></div></div>
+        <p class="footer-tagline">Kiwi family-owned. Landscaping, property and outdoor done right, by a team that lives here too.</p>
+        <div class="footer-contact-row"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3h3l2 4-2 1c1 2 3 4 5 5l1-2 4 2v3a1 1 0 0 1-1 1A12 12 0 0 1 3 4a1 1 0 0 1 1-1Z"/></svg><a href="tel:+64212255533">021 225 5533 · 021 CALL JEFF</a></div>
+        <div class="footer-contact-row"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="m2 4 6 5 6-5"/></svg><a href="mailto:hello@onpointservices.co.nz">hello@onpointservices.co.nz</a></div>
+      </div>
+      <div class="footer-col"><h4>Services</h4><ul>
+        <li><a href="service-garden-maintenance.html">Garden Maintenance</a></li>
+        <li><a href="service-landscape-design.html">Landscape Design</a></li>
+        <li><a href="service-landscape-construction.html">Landscape Construction</a></li>
+        <li><a href="service-hedge-trimming.html">Hedge Trimming</a></li>
+      </ul></div>
+      <div class="footer-col"><h4>Company</h4><ul>
+        <li><a href="about.html">About Us</a></li>
+        <li><a href="projects.html">Projects</a></li>
+        <li><a href="residential.html">Residential</a></li>
+        <li><a href="commercial.html">Commercial</a></li>
+      </ul></div>
+      <div class="footer-col"><h4>Get a Quote</h4><ul>
+        <li><a href="contact.html">Free site walk</a></li>
+        <li><a href="contact.html">Maintenance plans</a></li>
+        <li><a href="tel:+64212255533">Call Jeff direct</a></li>
+      </ul></div>
+    </div>
+    <div class="footer-bottom">
+      <span>© <span data-year>2026</span> On Point Services Ltd · All rights reserved</span>
+      <span>Design · Build · Maintain</span>
+      <span><a href="contact.html">Privacy</a> · <a href="contact.html">Terms</a></span>
+    </div>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>
