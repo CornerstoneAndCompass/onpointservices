@@ -1078,3 +1078,39 @@ footer {
 @media print {
   .nav, .cta-strip, footer { display: none; }
 }
+
+/* ============================================
+   MOBILE FIXES
+   ============================================ */
+
+/* Hero: prevent overflow-centering from hiding content behind fixed nav */
+@media (max-width: 1000px) {
+  .hero {
+    justify-content: flex-start;
+    padding-bottom: 60px;
+  }
+}
+
+/* Hero: hide the visual on small screens to keep everything above the fold */
+@media (max-width: 700px) {
+  .hero {
+    padding-top: 100px;
+    min-height: 100svh;
+  }
+  .hero-visual {
+    display: none;
+  }
+  .hero-meta {
+    margin-top: 28px;
+    padding-top: 20px;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .hero-meta .val {
+    font-size: 1.1rem;
+  }
+  .hero h1 {
+    margin-bottom: 18px;
+  }
+}
+
