@@ -13,7 +13,15 @@ const LEGACY = {
 };
 
 const html = (body, status = 200) =>
-  new Response(body, { status, headers: { "Content-Type": "text/html; charset=utf-8" } });
+  new Response(body, {
+    status,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      // Always revalidate so CMS edits appear on the live site immediately
+      // (static assets keep their own long-lived cache via the asset handler).
+      "Cache-Control": "public, max-age=0, must-revalidate",
+    },
+  });
 
 async function getSettings(env) {
   const { results } = await env.DB.prepare("SELECT key, value FROM settings").all();
