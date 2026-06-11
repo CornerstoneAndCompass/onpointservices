@@ -269,6 +269,7 @@ const TYPES = {
           { name: "number_label", label: "Number label", type: "text" },
           { name: "title", label: "Title", type: "text" },
           { name: "body", label: "Body", type: "textarea" },
+          { name: "image", label: "Background image", type: "image" },
           { name: "link_label", label: "Link label", type: "text" },
           { name: "link_url", label: "Link URL", type: "text" },
         ],
