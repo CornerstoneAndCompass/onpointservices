@@ -35,6 +35,8 @@ export async function onRequestPost(context) {
   return json({ ok: true });
 }
 
+const SENDER = "hello@onpointservices.co.nz"; // SPF-authorised for smtp2go on this domain
+
 /* DELETE /api/enquiry?id=123 */
 export async function onRequestDelete(context) {
   const { request, env } = context;
@@ -45,26 +47,48 @@ export async function onRequestDelete(context) {
 }
 
 async function notify(env, e) {
-  // Uses a Cloudflare Email send binding if one is configured (env.SEND_EMAIL).
-  // Falls back silently — the enquiry is already saved and visible in the admin.
-  if (!env.SEND_EMAIL) return;
+  // Sends via SMTP2GO (already SPF-authorised for this domain). The API key is a
+  // Cloudflare Pages secret (SMTP2GO_API_KEY). If unset, this no-ops — the
+  // enquiry is already saved in D1 and visible in the admin Enquiries tab.
+  if (!env.SMTP2GO_API_KEY) return;
   const to =
     (await getSetting(env, "notification_email")) ||
     (await getSetting(env, "email")) ||
-    "";
-  if (!to) return;
-  try {
-    const { EmailMessage } = await import("cloudflare:email");
-    const raw =
-      `From: On Point Website <noreply@onpointservices.co.nz>\r\n` +
-      `To: ${to}\r\n` +
-      `Reply-To: ${e.email || "noreply@onpointservices.co.nz"}\r\n` +
-      `Subject: New enquiry from ${e.name || "website"}\r\n\r\n` +
-      `Name: ${e.name}\nEmail: ${e.email}\nPhone: ${e.phone}\nPage: ${e.source}\n\n${e.message}\n`;
-    await env.SEND_EMAIL.send(new EmailMessage("noreply@onpointservices.co.nz", to, raw));
-  } catch {
-    /* email not configured — ignore */
-  }
+    "hello@onpointservices.co.nz";
+
+  const safe = (s) => String(s || "").replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]));
+  const subject = `New website enquiry — ${e.name || "no name"}`;
+  const text =
+    `New enquiry from the On Point website\n\n` +
+    `Name:  ${e.name || "-"}\n` +
+    `Email: ${e.email || "-"}\n` +
+    `Phone: ${e.phone || "-"}\n` +
+    `Page:  ${e.source || "-"}\n\n` +
+    `${e.message || "(no message)"}\n`;
+  const html =
+    `<h2 style="margin:0 0 12px">New website enquiry</h2>` +
+    `<p style="margin:0 0 4px"><strong>Name:</strong> ${safe(e.name) || "-"}</p>` +
+    `<p style="margin:0 0 4px"><strong>Email:</strong> ${safe(e.email) || "-"}</p>` +
+    `<p style="margin:0 0 4px"><strong>Phone:</strong> ${safe(e.phone) || "-"}</p>` +
+    `<p style="margin:0 0 12px"><strong>Page:</strong> ${safe(e.source) || "-"}</p>` +
+    `<p style="white-space:pre-wrap;border-top:1px solid #ddd;padding-top:12px">${safe(e.message) || "(no message)"}</p>`;
+
+  const body = {
+    api_key: env.SMTP2GO_API_KEY,
+    sender: SENDER,
+    to: [to],
+    subject,
+    text_body: text,
+    html_body: html,
+  };
+  // Reply straight to the enquirer when they left an email
+  if (e.email) body.custom_headers = [{ header: "Reply-To", value: e.email }];
+
+  await fetch("https://api.smtp2go.com/v3/email/send", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(body),
+  });
 }
 
 async function getSetting(env, key) {
