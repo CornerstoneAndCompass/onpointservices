@@ -359,6 +359,7 @@ const DEFAULT_MENU = [
   { label: "Commercial", url: "/commercial" },
   { label: "Projects", url: "/projects" },
   { label: "About", url: "/about" },
+  { label: "Blog", url: "/blog" },
   { label: "Contact", url: "/contact" },
 ];
 
@@ -377,6 +378,7 @@ const DEFAULT_FOOTER = [
     links: [
       { label: "About Us", url: "/about" },
       { label: "Projects", url: "/projects" },
+      { label: "Blog", url: "/blog" },
       { label: "Residential", url: "/residential" },
       { label: "Commercial", url: "/commercial" },
       { label: "Contact", url: "/contact" },
