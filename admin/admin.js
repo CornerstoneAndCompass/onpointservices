@@ -734,12 +734,91 @@ footerCard.appendChild(mkInput("footer_tagline", "Footer tagline",
 "Short brand tagline shown under the logo in the footer.", true));
 slot.appendChild(footerCard);
 
+/* ── Navigation menu (global) ── */
+function parseSetting(key, fallback) {
+try { const v = JSON.parse(settings[key] || "null"); return Array.isArray(v) && v.length ? v : fallback; }
+catch (e) { return fallback; }
+}
+function linkRow(item, onRemove, onMove) {
+const lbl = el("input", { type: "text", value: item.label || "", placeholder: "Label" });
+lbl.addEventListener("input", () => { item.label = lbl.value; });
+const url = el("input", { type: "text", value: item.url || "", placeholder: "/page-url or tel:…" });
+url.addEventListener("input", () => { item.url = url.value; });
+return el("div", { style: "display:flex; gap:6px; align-items:center; margin-bottom:6px;" },
+el("div", { style: "flex:1; display:flex; gap:6px;" }, lbl, url),
+iconBtn("↑", () => onMove(-1)), iconBtn("↓", () => onMove(1)), iconBtn("✕", onRemove, "btn-danger"));
+}
+
+slot.appendChild(el("div", { class: "section-label" }, "Navigation menu"));
+const navCard = el("div", { class: "card" });
+navCard.appendChild(el("div", { class: "inline-note", style: "margin-bottom:12px;" }, "Links shown in the top navigation bar. Use page URLs like /services."));
+const navItems = parseSetting("nav_menu", [
+{ label: "Home", url: "/" }, { label: "Services", url: "/services" },
+{ label: "Residential", url: "/residential" }, { label: "Commercial", url: "/commercial" },
+{ label: "Projects", url: "/projects" }, { label: "About", url: "/about" }, { label: "Contact", url: "/contact" },
+]);
+const navList = el("div", {});
+function renderNav() {
+navList.innerHTML = "";
+navItems.forEach((it, i) => navList.appendChild(linkRow(it,
+() => { navItems.splice(i, 1); renderNav(); },
+(d) => { const j = i + d; if (j < 0 || j >= navItems.length) return; [navItems[i], navItems[j]] = [navItems[j], navItems[i]]; renderNav(); })));
+navList.appendChild(el("button", { class: "btn btn-sm", type: "button", onclick: () => { navItems.push({ label: "New link", url: "/" }); renderNav(); } }, "+ Add menu link"));
+}
+renderNav();
+navCard.appendChild(navList);
+slot.appendChild(navCard);
+
+/* ── Footer columns (global) ── */
+slot.appendChild(el("div", { class: "section-label" }, "Footer columns"));
+const fcCard = el("div", { class: "card" });
+fcCard.appendChild(el("div", { class: "inline-note", style: "margin-bottom:12px;" }, "The link columns shown in the footer (the contact column on the left is built from your contact details above)."));
+const footerCols = parseSetting("footer_cols", [
+{ title: "Services", links: [
+{ label: "Garden Maintenance", url: "/services/garden-maintenance" }, { label: "Landscape Design", url: "/services/landscape-design" },
+{ label: "Landscape Construction", url: "/services/landscape-construction" }, { label: "Hedge Trimming", url: "/services/hedge-trimming" } ] },
+{ title: "Company", links: [
+{ label: "About Us", url: "/about" }, { label: "Projects", url: "/projects" },
+{ label: "Residential", url: "/residential" }, { label: "Commercial", url: "/commercial" }, { label: "Contact", url: "/contact" } ] },
+{ title: "Get a Quote", links: [
+{ label: "Free site walk", url: "/contact" }, { label: "Maintenance plans", url: "/contact" }, { label: "Call Jeff direct", url: "tel:+64212255533" } ] },
+]);
+const fcList = el("div", {});
+function renderFooterCols() {
+fcList.innerHTML = "";
+footerCols.forEach((col, ci) => {
+const titleInp = el("input", { type: "text", value: col.title || "", placeholder: "Column heading" });
+titleInp.addEventListener("input", () => { col.title = titleInp.value; });
+const linksBox = el("div", { style: "margin-top:8px; padding-left:10px; border-left:2px solid var(--line);" });
+if (!Array.isArray(col.links)) col.links = [];
+const renderLinks = () => {
+linksBox.innerHTML = "";
+col.links.forEach((lk, li) => linksBox.appendChild(linkRow(lk,
+() => { col.links.splice(li, 1); renderLinks(); },
+(d) => { const j = li + d; if (j < 0 || j >= col.links.length) return; [col.links[li], col.links[j]] = [col.links[j], col.links[li]]; renderLinks(); })));
+linksBox.appendChild(el("button", { class: "btn btn-sm", type: "button", onclick: () => { col.links.push({ label: "New link", url: "/" }); renderLinks(); } }, "+ Add link"));
+};
+renderLinks();
+fcList.appendChild(el("div", { class: "card", style: "margin-bottom:12px; background:var(--ink-3);" },
+el("div", { style: "display:flex; gap:8px; align-items:center;" },
+el("div", { style: "flex:1;" }, titleInp),
+iconBtn("✕ column", () => { footerCols.splice(ci, 1); renderFooterCols(); }, "btn-danger")),
+linksBox));
+});
+fcList.appendChild(el("button", { class: "btn btn-sm", type: "button", onclick: () => { footerCols.push({ title: "New column", links: [] }); renderFooterCols(); } }, "+ Add footer column"));
+}
+renderFooterCols();
+fcCard.appendChild(fcList);
+slot.appendChild(fcCard);
+
 /* ── Save ──────────────────────────────────────────────── */
 slot.appendChild(el("div", { class: "sticky-save" },
 el("button", { class: "btn btn-gold", onclick: async () => {
 const out = {};
 for (const k in inputs) out[k] = inputs[k].value;
-try { await api.put("/api/settings", { settings: out }); toast("Settings saved"); }
+out.nav_menu = JSON.stringify(navItems.filter(i => i.label && i.url));
+out.footer_cols = JSON.stringify(footerCols.filter(c => c.title));
+try { await api.put("/api/settings", { settings: out }); toast("Settings saved — changes are live"); }
 catch (e) { toast(e.message, true); }
 }}, "Save settings")
 ));
