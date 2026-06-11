@@ -184,3 +184,46 @@ input, textarea, select { font-family: var(--sans); }
 .add-section-bar { display: flex; gap: 8px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
 .divider { height: 1px; background: var(--line); margin: 24px 0; }
 .inline-note { font-size: 0.8rem; color: var(--muted); }
+
+/* ===== MEDIA LIBRARY ===== */
+.media-drop {
+  border: 1.5px dashed var(--line-2); border-radius: 10px; padding: 26px 18px;
+  text-align: center; cursor: pointer; transition: all 0.15s; background: var(--ink-3);
+}
+.media-drop:hover, .media-drop.drag { border-color: var(--gold); background: rgba(244,197,24,0.05); }
+.media-drop-inner strong { display: block; color: var(--bone); margin-bottom: 4px; }
+.media-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px; margin-top: 18px;
+}
+.media-card {
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+  background: var(--ink-2); display: flex; flex-direction: column;
+}
+.media-card.pickable { cursor: pointer; transition: border-color 0.15s, transform 0.1s; }
+.media-card.pickable:hover { border-color: var(--gold); transform: translateY(-2px); }
+.media-thumb {
+  width: 100%; aspect-ratio: 4 / 3; background-size: cover; background-position: center;
+  background-color: var(--ink-3);
+}
+.media-meta { padding: 8px 10px; display: flex; flex-direction: column; gap: 8px; }
+.media-label {
+  font-size: 0.74rem; color: var(--muted); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ===== MODAL (media picker) ===== */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100;
+  display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px);
+}
+.modal {
+  background: var(--ink-2); border: 1px solid var(--line-2); border-radius: 14px;
+  width: 100%; max-width: 760px; max-height: 84vh; display: flex; flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; border-bottom: 1px solid var(--line);
+}
+.modal-body { padding: 18px; overflow-y: auto; }

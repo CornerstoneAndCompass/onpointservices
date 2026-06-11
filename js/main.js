@@ -92,17 +92,58 @@
     });
   }
 
-  // -------- Form submit --------
+  // -------- Form submit (sends to the CMS enquiries inbox) --------
   const form = document.querySelector('[data-form="quote"]');
   if (form) {
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const status = form.querySelector('[data-form-status]');
-      if (status) {
-        status.textContent = 'Cheers, your message is on its way to Jeff. We will be in touch within one business day.';
-        status.style.color = '#F4C518';
+      const btn = form.querySelector('button[type="submit"], button:not([type])');
+      const val = (n) => { const el = form.querySelector('[name="' + n + '"]'); return el ? el.value.trim() : ''; };
+      const checked = (n) => [...form.querySelectorAll('[name="' + n + '"]:checked')].map(el => el.value);
+
+      const name = val('name');
+      const email = val('email');
+      const phone = val('phone');
+      if (!name || (!email && !phone)) {
+        if (status) { status.textContent = 'Please add your name and a phone or email so Jeff can reply.'; status.style.color = '#ff6b6b'; }
+        return;
       }
-      form.reset();
+
+      // Build a readable message from the detailed quote fields
+      const lines = [];
+      if (val('address')) lines.push('Location: ' + val('address'));
+      const ptype = (form.querySelector('[name="ptype"]:checked') || {}).value;
+      if (ptype) lines.push('Property type: ' + ptype);
+      const services = checked('services');
+      if (services.length) lines.push('Services: ' + services.join(', '));
+      if (val('timing')) lines.push('Timing: ' + val('timing'));
+      if (val('budget')) lines.push('Budget: ' + val('budget'));
+      if (val('brief')) lines.push('\n' + val('brief'));
+      const message = lines.join('\n');
+
+      if (btn) { btn.disabled = true; }
+      if (status) { status.textContent = 'Sending...'; status.style.color = '#9aa'; }
+      try {
+        const res = await fetch('/api/enquiry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, phone, message, source: 'Quote form — ' + location.pathname })
+        });
+        if (!res.ok) throw new Error('bad response');
+        if (status) {
+          status.textContent = 'Cheers ' + name.split(' ')[0] + ', your enquiry is in. Jeff will be in touch within one business day.';
+          status.style.color = '#F4C518';
+        }
+        form.reset();
+      } catch (err) {
+        if (status) {
+          status.innerHTML = 'Sorry, that did not send. Please call Jeff on <a href="tel:+64212255533" style="color:#F4C518">021 225 5533</a> or email <a href="mailto:hello@onpointservices.co.nz" style="color:#F4C518">hello@onpointservices.co.nz</a>.';
+          status.style.color = '#ff6b6b';
+        }
+      } finally {
+        if (btn) { btn.disabled = false; }
+      }
     });
   }
 

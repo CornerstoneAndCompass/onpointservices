@@ -149,7 +149,7 @@ function renderTab() {
 const view = document.getElementById("view");
 view.innerHTML = "";
 const tabs = el("div", { class: "tabs" },
-...[["pages", "Pages"], ["blog", "Blog"], ["enquiries", "Enquiries"], ["settings", "Settings"], ["users", "Users"]]
+...[["pages", "Pages"], ["blog", "Blog"], ["media", "Media"], ["enquiries", "Enquiries"], ["settings", "Settings"], ["users", "Users"]]
 .map(([k, label]) => el("button", {
 class: "tab" + (state.tab === k ? " active" : ""),
 onclick: () => { state.tab = k; renderTab(); }
@@ -159,6 +159,7 @@ const slot = el("div", { id: "slot" });
 view.appendChild(slot);
 if (state.tab === "pages") viewPagesList(slot);
 else if (state.tab === "blog") viewBlogList(slot);
+else if (state.tab === "media") viewMedia(slot);
 else if (state.tab === "enquiries") viewEnquiries(slot);
 else if (state.tab === "settings") viewSettings(slot);
 else viewUsers(slot);
@@ -424,17 +425,31 @@ ctrl.addEventListener("change", () => { data[field.name] = ctrl.value; });
 const type = field.type === "number" ? "number" : "text";
 ctrl = el("input", { type });
 ctrl.value = data[field.name] || "";
-if (field.type === "image") ctrl.placeholder = "https://image-url...";
-ctrl.addEventListener("input", () => { data[field.name] = ctrl.value; });
+if (field.type === "image") ctrl.placeholder = "Pick from library, upload, or paste a URL";
+ctrl.addEventListener("input", () => { data[field.name] = ctrl.value; if (field.type === "image") syncImgPreview(); });
 }
 wrap.appendChild(ctrl);
 
 if (field.type === "richtext") {
 wrap.appendChild(el("div", { class: "help" }, "Basic HTML allowed: <p>, <h3>, <strong>, <a>, <ul><li>."));
 }
-if (field.type === "image" && data[field.name]) {
-const prev = el("img", { src: data[field.name], style: "max-width:160px;border-radius:6px;margin-top:8px;display:block;" });
+
+let syncImgPreview = () => {};
+if (field.type === "image") {
+const prev = el("img", { style: "max-width:160px;border-radius:6px;margin-top:8px;display:none;border:1px solid var(--line-2);" });
+syncImgPreview = () => {
+if (data[field.name]) { prev.src = data[field.name]; prev.style.display = "block"; }
+else prev.style.display = "none";
+};
+const pickBtn = el("button", { class: "btn btn-sm", type: "button", onclick: () => {
+openMediaPicker((url) => { data[field.name] = url; ctrl.value = url; syncImgPreview(); });
+}}, "Choose from library");
+const clearBtn = el("button", { class: "btn btn-sm", type: "button", onclick: () => {
+data[field.name] = ""; ctrl.value = ""; syncImgPreview();
+}}, "Clear");
+wrap.appendChild(el("div", { class: "row-actions", style: "margin-top:8px;" }, pickBtn, clearBtn));
 wrap.appendChild(prev);
+syncImgPreview();
 }
 if (field.help) wrap.appendChild(el("div", { class: "help" }, field.help));
 return wrap;
@@ -802,6 +817,121 @@ if (!confirm("Delete user \"" + (u.name || u.email) + "\"? They will no longer b
 try { await api.del("/api/users/" + u.id); toast("User deleted"); renderTab(); }
 catch (e) { toast(e.message, true); }
 }
+}
+
+/* ============================================================
+MEDIA LIBRARY
+============================================================ */
+async function uploadMediaFiles(files, onProgress) {
+const out = [];
+for (const file of files) {
+if (!file.type.startsWith("image/")) continue;
+const fd = new FormData();
+fd.append("file", file);
+fd.append("label", file.name);
+try {
+const r = await fetch("/api/media", { method: "POST", body: fd });
+const d = await r.json();
+if (!r.ok) throw new Error(d.error || "Upload failed");
+out.push(d);
+} catch (e) { toast(file.name + ": " + e.message, true); }
+if (onProgress) onProgress();
+}
+return out;
+}
+
+function mediaDropzone(onDone) {
+const input = el("input", { type: "file", accept: "image/*", multiple: "multiple", style: "display:none;" });
+const zone = el("div", { class: "media-drop" },
+el("div", { class: "media-drop-inner" },
+el("strong", {}, "Drop images here"),
+el("div", { class: "help" }, "or click to choose files — JPG, PNG, WebP up to 15MB")));
+const busy = el("div", { class: "help", style: "margin-top:6px;" }, "");
+zone.addEventListener("click", () => input.click());
+input.addEventListener("change", async () => {
+if (!input.files.length) return;
+let n = 0; busy.textContent = "Uploading...";
+const res = await uploadMediaFiles([...input.files], () => { busy.textContent = "Uploaded " + (++n) + "..."; });
+busy.textContent = "";
+input.value = "";
+if (res.length) { toast(res.length + " image" + (res.length > 1 ? "s" : "") + " uploaded"); onDone(); }
+});
+["dragover", "dragenter"].forEach(ev => zone.addEventListener(ev, (e) => { e.preventDefault(); zone.classList.add("drag"); }));
+["dragleave", "drop"].forEach(ev => zone.addEventListener(ev, (e) => { e.preventDefault(); zone.classList.remove("drag"); }));
+zone.addEventListener("drop", async (e) => {
+const files = [...(e.dataTransfer.files || [])];
+if (!files.length) return;
+let n = 0; busy.textContent = "Uploading...";
+const res = await uploadMediaFiles(files, () => { busy.textContent = "Uploaded " + (++n) + "..."; });
+busy.textContent = "";
+if (res.length) { toast(res.length + " image" + (res.length > 1 ? "s" : "") + " uploaded"); onDone(); }
+});
+return el("div", {}, zone, input, busy);
+}
+
+async function viewMedia(slot) {
+slot.appendChild(el("div", { class: "spinner" }, "Loading media..."));
+let media = [];
+try { media = (await api.get("/api/media")).media; }
+catch (e) { slot.innerHTML = ""; slot.appendChild(el("div", { class: "empty" }, e.message)); return; }
+slot.innerHTML = "";
+
+slot.appendChild(el("div", { class: "page-title" }, "Media library"));
+slot.appendChild(el("div", { class: "page-sub" }, "Upload and manage images. Use 'Choose from library' on any image field across the site to insert them."));
+
+slot.appendChild(mediaDropzone(() => renderTab()));
+
+if (!media.length) { slot.appendChild(el("div", { class: "empty" }, "No images yet. Upload some above.")); return; }
+
+const grid = el("div", { class: "media-grid" });
+media.forEach(m => {
+const card = el("div", { class: "media-card" },
+el("div", { class: "media-thumb", style: "background-image:url('" + m.url + "')" }),
+el("div", { class: "media-meta" },
+el("div", { class: "media-label", title: m.label || "" }, m.label || m.url),
+el("div", { class: "row-actions" },
+el("button", { class: "btn btn-sm", onclick: () => { navigator.clipboard.writeText(m.url); toast("URL copied"); } }, "Copy URL"),
+el("button", { class: "btn btn-sm btn-danger", onclick: async () => {
+if (!confirm("Delete this image? It will disappear anywhere it is used.")) return;
+try { await api.del("/api/media/" + m.id); toast("Deleted"); renderTab(); }
+catch (e) { toast(e.message, true); }
+}}, "Delete"))));
+grid.appendChild(card);
+});
+slot.appendChild(grid);
+}
+
+/* ---------- media picker modal (used by image fields) ---------- */
+async function openMediaPicker(onPick) {
+const overlay = el("div", { class: "modal-overlay" });
+const close = () => overlay.remove();
+overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+
+const body = el("div", { class: "modal-body" }, el("div", { class: "spinner" }, "Loading media..."));
+const modal = el("div", { class: "modal" },
+el("div", { class: "modal-head" },
+el("strong", {}, "Choose an image"),
+el("button", { class: "btn btn-sm", onclick: close }, "Close")),
+body);
+overlay.appendChild(modal);
+document.body.appendChild(overlay);
+
+async function load() {
+let media = [];
+try { media = (await api.get("/api/media")).media; }
+catch (e) { body.innerHTML = ""; body.appendChild(el("div", { class: "empty" }, e.message)); return; }
+body.innerHTML = "";
+body.appendChild(mediaDropzone(load));
+if (!media.length) { body.appendChild(el("div", { class: "empty" }, "No images yet — upload above.")); return; }
+const grid = el("div", { class: "media-grid" });
+media.forEach(m => {
+grid.appendChild(el("div", { class: "media-card pickable", onclick: () => { onPick(m.url); close(); } },
+el("div", { class: "media-thumb", style: "background-image:url('" + m.url + "')" }),
+el("div", { class: "media-meta" }, el("div", { class: "media-label" }, m.label || m.url))));
+});
+body.appendChild(grid);
+}
+load();
 }
 
 /* ---------- go ---------- */
