@@ -1,7 +1,7 @@
 /* Catch-all page renderer. Serves every public page from the CMS (D1).
    Runs only for routes not handled by static assets (/assets, /css, /js,
    /admin) or more-specific functions (/api/*, /media/*). */
-import { renderPage, renderBlogIndex, renderBlogPost, renderSimple } from "./_render.js";
+import { renderPage, renderBlogIndex, renderBlogPost, renderSimple, SITE } from "./_render.js";
 
 // Old static filenames -> CMS slugs, so existing links/bookmarks keep working.
 const LEGACY = {
@@ -26,6 +26,30 @@ const html = (body, status = 200) =>
 async function getSettings(env) {
   const { results } = await env.DB.prepare("SELECT key, value FROM settings").all();
   return results || [];
+}
+
+async function sitemap(env) {
+  const { results: pages } = await env.DB.prepare(
+    "SELECT slug, updated_at FROM pages WHERE published = 1 AND noindex = 0 ORDER BY nav_order"
+  ).all();
+  const { results: posts } = await env.DB.prepare(
+    "SELECT slug, updated_at FROM blog_posts WHERE published = 1"
+  ).all();
+  const urls = [];
+  for (const p of pages || []) urls.push({ loc: SITE + (p.slug ? "/" + p.slug : "/"), lastmod: p.updated_at });
+  for (const b of posts || []) urls.push({ loc: SITE + "/blog/" + b.slug, lastmod: b.updated_at });
+  const xml =
+    '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+    urls
+      .map(
+        (u) =>
+          `  <url><loc>${u.loc}</loc>${u.lastmod ? `<lastmod>${String(u.lastmod).slice(0, 10)}</lastmod>` : ""}<changefreq>weekly</changefreq></url>`
+      )
+      .join("\n") +
+    "\n</urlset>";
+  return new Response(xml, {
+    headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600" },
+  });
 }
 
 async function renderCmsPage(env, page) {
@@ -60,6 +84,9 @@ export async function onRequestGet(context) {
   const { env, params, request } = context;
   const pathname = new URL(request.url).pathname;
 
+  // Dynamic sitemap from published pages + blog posts.
+  if (pathname === "/sitemap.xml") return sitemap(env);
+
   // Let static assets and the admin app fall through to Pages' asset handler.
   // (A root [[path]].js catch-all otherwise intercepts EVERYTHING.)
   if (
@@ -70,7 +97,6 @@ export async function onRequestGet(context) {
     pathname.startsWith("/media/") ||
     pathname === "/favicon.ico" ||
     pathname === "/robots.txt" ||
-    pathname === "/sitemap.xml" ||
     (/\.[a-z0-9]+$/i.test(pathname) && !/\.html$/i.test(pathname))
   ) {
     return context.next();

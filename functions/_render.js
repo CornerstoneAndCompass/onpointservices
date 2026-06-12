@@ -476,13 +476,78 @@ function renderFooter(settings) {
 </footer>`;
 }
 
-function renderHead(page, settings) {
+export const SITE = "https://onpointservices.co.nz";
+const absUrl = (u) => (!u ? "" : /^https?:\/\//i.test(u) ? u : SITE + (u.startsWith("/") ? u : "/" + u));
+const canonicalFor = (page) => SITE + (page.slug ? "/" + page.slug : "/");
+
+function findOgImage(sections) {
+  for (const s of sections || []) {
+    const d = s.data || {};
+    if (d.image) return d.image;
+    if (Array.isArray(d.items)) { const it = d.items.find((i) => i.image); if (it) return it.image; }
+    if (Array.isArray(d.cards)) { const c = d.cards.find((i) => i.image); if (c) return c.image; }
+  }
+  return "/assets/projects/deck-hardwood-1.jpg";
+}
+
+function localBusiness(settings) {
+  const b = {
+    "@type": "LocalBusiness",
+    "@id": SITE + "/#business",
+    name: (settings.business_name_line1 || "On Point") + " " + (settings.business_name_line2 || "Services Ltd"),
+    url: SITE + "/",
+    logo: absUrl(settings.logo_url || "/assets/logo.svg"),
+    image: absUrl("/assets/projects/deck-hardwood-1.jpg"),
+    telephone: settings.phone_href || "+64212255533",
+    email: settings.email || "hello@onpointservices.co.nz",
+    priceRange: "$$",
+    address: { "@type": "PostalAddress", addressLocality: "Auckland", addressRegion: "Auckland", addressCountry: "NZ" },
+    areaServed: { "@type": "City", name: "Auckland" },
+    description: "Kiwi family-owned landscaping company. Garden maintenance, design and outdoor construction for residential and commercial properties across Auckland.",
+  };
+  if (settings.facebook_url) b.sameAs = [settings.facebook_url];
+  return b;
+}
+
+function buildJsonLd(page, sections, settings, canonical) {
+  const blocks = [localBusiness(settings)];
+  const ph = (sections || []).find((s) => s.type === "page_header");
+  const crumbs = ph && ph.data && ph.data.crumbs;
+  if (Array.isArray(crumbs) && crumbs.length) {
+    const items = crumbs.map((c, i) => ({ "@type": "ListItem", position: i + 1, name: c.label, item: c.url ? absUrl(c.url) : canonical }));
+    items.push({ "@type": "ListItem", position: items.length + 1, name: page.title || "", item: canonical });
+    blocks.push({ "@type": "BreadcrumbList", itemListElement: items });
+  }
+  const faqItems = [];
+  (sections || []).filter((s) => s.type === "faq").forEach((s) => {
+    ((s.data && s.data.items) || []).forEach((it) => {
+      if (it.question && it.answer) faqItems.push({ "@type": "Question", name: it.question, acceptedAnswer: { "@type": "Answer", text: it.answer } });
+    });
+  });
+  if (faqItems.length) blocks.push({ "@type": "FAQPage", mainEntity: faqItems });
+  if (page.slug && page.slug.indexOf("services/") === 0) {
+    blocks.push({ "@type": "Service", name: page.title, serviceType: page.title, provider: { "@id": SITE + "/#business" }, areaServed: { "@type": "City", name: "Auckland" }, url: canonical });
+  }
+  return blocks;
+}
+
+function jsonLdScript(blocks) {
+  if (!blocks || !blocks.length) return "";
+  const doc = blocks.length === 1 ? blocks[0] : blocks;
+  const withCtx = Array.isArray(doc) ? { "@context": "https://schema.org", "@graph": doc } : { "@context": "https://schema.org", ...doc };
+  return `<script type="application/ld+json">${JSON.stringify(withCtx).replace(/</g, "\\u003c")}</script>\n`;
+}
+
+function renderHead(page, settings, opts) {
+  opts = opts || {};
   const logo = settings.logo_url || "/assets/logo.svg";
   const title = page.seo_title || (page.title ? page.title + " | On Point Services Ltd" : "On Point Services Ltd");
   const desc =
     page.seo_description ||
     "On Point Services Ltd designs, builds and maintains residential and commercial outdoor spaces across Auckland.";
-  const ogImg = page.seo_og_image || logo;
+  const canonical = canonicalFor(page);
+  const ogImg = absUrl(page.seo_og_image || opts.ogImage || "/assets/projects/deck-hardwood-1.jpg");
+  const businessName = (settings.business_name_line1 || "On Point") + " " + (settings.business_name_line2 || "Services Ltd");
   return `<!DOCTYPE html>
 <html lang="en-NZ">
 <head>
@@ -490,13 +555,22 @@ function renderHead(page, settings) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${esc(title)}</title>
 <meta name="description" content="${attr(desc)}" />
-${page.noindex ? '<meta name="robots" content="noindex,nofollow" />\n' : ""}<meta name="theme-color" content="#0A0A0A" />
+<link rel="canonical" href="${attr(canonical)}" />
+<meta name="robots" content="${page.noindex ? "noindex,nofollow" : "index,follow,max-image-preview:large"}" />
+<meta name="theme-color" content="#0A0A0A" />
 <link rel="icon" type="image/svg+xml" href="${attr(logo)}" />
-<meta property="og:type" content="website" />
+<meta property="og:type" content="${page.slug && page.slug.indexOf("blog/") === 0 ? "article" : "website"}" />
+<meta property="og:site_name" content="${attr(businessName)}" />
+<meta property="og:locale" content="en_NZ" />
+<meta property="og:url" content="${attr(canonical)}" />
 <meta property="og:title" content="${attr(title)}" />
 <meta property="og:description" content="${attr(desc)}" />
 <meta property="og:image" content="${attr(ogImg)}" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="${attr(title)}" />
+<meta name="twitter:description" content="${attr(desc)}" />
+<meta name="twitter:image" content="${attr(ogImg)}" />
+${jsonLdScript(opts.jsonLd)}<link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/css/styles.css" />
@@ -505,13 +579,14 @@ ${page.noindex ? '<meta name="robots" content="noindex,nofollow" />\n' : ""}<met
 }
 
 export function renderSimple(page, innerHtml, settingsRows) {
-  return shell(page, settingsObj(settingsRows), innerHtml);
+  const settings = settingsObj(settingsRows);
+  return shell(page, settings, innerHtml, { jsonLd: [localBusiness(settings)] });
 }
 
-function shell(page, settings, inner) {
+function shell(page, settings, inner, opts) {
   const activeUrl = "/" + (page.slug || "");
   return (
-    renderHead(page, settings) +
+    renderHead(page, settings, opts) +
     "\n" +
     renderNav(settings, activeUrl) +
     "\n" +
@@ -559,7 +634,10 @@ export function renderBlogIndex(blogPage, posts, settingsRows) {
   <section class="section"><div class="container"><div class="project-grid">
       ${cards}
   </div></div></section>`;
-  return shell(page, settings, inner);
+  return shell(page, settings, inner, {
+    ogImage: (arr(posts)[0] || {}).cover_image,
+    jsonLd: [localBusiness(settings)],
+  });
 }
 
 export function renderBlogPost(post, settingsRows) {
@@ -582,27 +660,35 @@ export function renderBlogPost(post, settingsRows) {
     <div class="article-body" style="font-size:1.08rem; line-height:1.85;">${post.body || ""}</div>
     <p style="margin-top:48px;"><a href="/blog" class="btn btn-ghost">&larr; Back to blog</a></p>
   </div></section>`;
-  return shell(page, settings, inner);
+  const canonical = canonicalFor(page);
+  const blogPosting = {
+    "@type": "BlogPosting",
+    headline: post.title,
+    description: post.excerpt || "",
+    image: post.cover_image ? absUrl(post.cover_image) : absUrl("/assets/projects/deck-hardwood-1.jpg"),
+    datePublished: post.published_at || undefined,
+    dateModified: post.updated_at || post.published_at || undefined,
+    author: { "@type": "Organization", name: post.author || "On Point Services Ltd" },
+    publisher: { "@id": SITE + "/#business" },
+    mainEntityOfPage: canonical,
+  };
+  return shell(page, settings, inner, {
+    ogImage: post.cover_image,
+    jsonLd: [localBusiness(settings), blogPosting],
+  });
 }
 
 export function renderPage(page, sections, settingsRows) {
-  const settings = {};
-  for (const r of settingsRows || []) settings[r.key] = r.value;
-  const activeUrl = "/" + (page.slug || "");
+  const settings = settingsObj(settingsRows);
   const body = sections
     .filter((s) => s.enabled)
     .map((s) => renderSection(s, settings))
     .join("\n\n");
-  return (
-    renderHead(page, settings) +
-    "\n" +
-    renderNav(settings, activeUrl === "/" ? "/" : activeUrl) +
-    "\n" +
-    body +
-    "\n" +
-    renderFooter(settings) +
-    `\n<script src="/js/main.js"></script>\n<script src="/js/cms.js" defer></script>\n</body>\n</html>`
-  );
+  const opts = {
+    ogImage: findOgImage(sections),
+    jsonLd: buildJsonLd(page, sections, settings, canonicalFor(page)),
+  };
+  return shell(page, settings, body, opts);
 }
 
 export { esc };
