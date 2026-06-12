@@ -412,7 +412,7 @@ const brandLines = (settings) => {
 
 function renderNav(settings, activeUrl) {
   const menu = parseJSON(settings.nav_menu, DEFAULT_MENU);
-  const logo = settings.logo_url || "/assets/logo.svg";
+  const logo = settings.logo_url || "/assets/logo.png";
   const { l1, l2 } = brandLines(settings);
   const phoneHref = settings.phone_href ? "tel:" + settings.phone_href.replace(/[^+\d]/g, "") : "tel:+64212255533";
   const cta = settings.nav_cta_label || "021 CALL JEFF";
@@ -439,7 +439,7 @@ function renderNav(settings, activeUrl) {
 
 function renderFooter(settings) {
   const cols = parseJSON(settings.footer_cols, DEFAULT_FOOTER);
-  const logo = settings.logo_url || "/assets/logo.svg";
+  const logo = settings.logo_url || "/assets/logo.png";
   const { l1, l2 } = brandLines(settings);
   const tagline = settings.footer_tagline || "Kiwi family-owned. Landscaping, property and outdoor done right, by a team that lives here too.";
   const phoneHref = settings.phone_href ? "tel:" + settings.phone_href.replace(/[^+\d]/g, "") : "tel:+64212255533";
@@ -496,7 +496,7 @@ function localBusiness(settings) {
     "@id": SITE + "/#business",
     name: (settings.business_name_line1 || "On Point") + " " + (settings.business_name_line2 || "Services Ltd"),
     url: SITE + "/",
-    logo: absUrl(settings.logo_url || "/assets/logo.svg"),
+    logo: absUrl(settings.logo_url || "/assets/logo.png"),
     image: absUrl("/assets/projects/deck-hardwood-1.jpg"),
     telephone: settings.phone_href || "+64212255533",
     email: settings.email || "hello@onpointservices.co.nz",
@@ -540,7 +540,7 @@ function jsonLdScript(blocks) {
 
 function renderHead(page, settings, opts) {
   opts = opts || {};
-  const logo = settings.logo_url || "/assets/logo.svg";
+  const logo = settings.logo_url || "/assets/logo.png";
   const title = page.seo_title || (page.title ? page.title + " | On Point Services Ltd" : "On Point Services Ltd");
   const desc =
     page.seo_description ||
@@ -558,7 +558,8 @@ function renderHead(page, settings, opts) {
 <link rel="canonical" href="${attr(canonical)}" />
 <meta name="robots" content="${page.noindex ? "noindex,nofollow" : "index,follow,max-image-preview:large"}" />
 <meta name="theme-color" content="#0A0A0A" />
-<link rel="icon" type="image/svg+xml" href="${attr(logo)}" />
+<link rel="icon" type="${/\.svg$/i.test(logo) ? "image/svg+xml" : /\.png$/i.test(logo) ? "image/png" : "image/jpeg"}" href="${attr(logo)}" />
+<link rel="apple-touch-icon" href="${attr(logo)}" />
 <meta property="og:type" content="${page.slug && page.slug.indexOf("blog/") === 0 ? "article" : "website"}" />
 <meta property="og:site_name" content="${attr(businessName)}" />
 <meta property="og:locale" content="en_NZ" />

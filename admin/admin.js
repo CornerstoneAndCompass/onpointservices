@@ -89,7 +89,7 @@ toast(err.message, true);
 btn.disabled = false;
 }
 }},
-el("img", { src: "/assets/logo.svg", alt: "" }),
+el("img", { src: "/assets/logo.png", alt: "" }),
 el("h1", {}, title),
 el("p", {}, sub),
 ...fields.map(f => {
@@ -131,7 +131,7 @@ APP SHELL
 function renderApp() {
 const topbar = el("div", { class: "topbar" },
 el("div", { class: "topbar-brand" },
-el("img", { src: "/assets/logo.svg", alt: "" }),
+el("img", { src: "/assets/logo.png", alt: "" }),
 el("div", {}, "On Point CMS", el("small", {}, "Content manager"))),
 el("div", { class: "topbar-actions" },
 el("a", { class: "btn btn-sm", href: "/", target: "_blank" }, "View site"),
@@ -677,11 +677,11 @@ return field;
 slot.appendChild(el("div", { class: "section-label" }, "Branding"));
 const brandCard = el("div", { class: "card" });
 brandCard.appendChild(mkInput("logo_url", "Logo image URL",
-"URL of your logo file. Default is /assets/logo.svg — replace to use a new image hosted elsewhere (e.g. Cloudflare Images or R2). To change the SVG file itself, update assets/logo.svg in GitHub."));
+"URL of your logo file. Default is /assets/logo.png — replace to use a new image hosted elsewhere (e.g. Cloudflare Images or R2). To change the SVG file itself, update /assets/logo.png in GitHub."));
 
 // Logo preview
 const logoPreview = el("img", {
-src: settings.logo_url || "/assets/logo.svg",
+src: settings.logo_url || "/assets/logo.png",
 style: "width:80px;height:80px;object-fit:contain;border-radius:8px;border:1px solid var(--line-2);background:var(--ink-3);margin-top:4px;display:block;"
 });
 inputs["logo_url"].addEventListener("input", () => {
