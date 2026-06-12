@@ -194,7 +194,7 @@ p { color: var(--bone-dim); }
   text-transform: uppercase;
   color: var(--bone);
 }
-.nav-brand .logo-mark { width: 42px; height: 42px; flex: 0 0 42px; }
+.nav-brand .logo-mark { width: 56px; height: 56px; flex: 0 0 56px; }
 .nav-brand-text { line-height: 1; display: flex; flex-direction: column; gap: 2px; }
 .nav-brand-text small {
   font-family: var(--font-mono);
