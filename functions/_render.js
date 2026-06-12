@@ -61,7 +61,7 @@ const R = {
       ${meta ? `<div class="hero-meta">${meta}</div>` : ""}
     </div>
     <div class="hero-visual reveal">
-      ${d.image ? `<img src="${attr(d.image)}" alt="${attr(d.image_alt)}" loading="lazy" />` : ""}
+      ${d.image ? `<img src="${attr(d.image)}" alt="${attr(d.image_alt)}" loading="eager" fetchpriority="high" decoding="async" />` : ""}
       ${d.caption_eyebrow || d.caption_title ? `<div class="hero-tag-card"><span class="eyebrow">${esc(d.caption_eyebrow)}</span><strong>${esc(d.caption_title)}</strong></div>` : ""}
     </div>
   </div>
