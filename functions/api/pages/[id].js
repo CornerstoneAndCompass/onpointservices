@@ -1,4 +1,4 @@
-import { json, err, slugify, readBody } from "../_utils.js";
+import { json, err, slugify, slugifyPath, readBody } from "../_utils.js";
 
 /* GET /api/pages/:id — page meta + ordered sections (data parsed) */
 export async function onRequestGet(context) {
@@ -38,10 +38,11 @@ export async function onRequestPut(context) {
     .first();
   if (!existing) return err("Page not found.", 404);
 
-  // Slug: home page (existing '') stays ''. Otherwise slugify, keep unique.
+  // Slug: home page (existing '') stays ''. Otherwise slugifyPath (preserves
+  // slashes for nested pages like services/garden-maintenance), keep unique.
   let slug = existing.slug;
   if (existing.slug !== "") {
-    slug = slugify(page.slug || page.title) || existing.slug;
+    slug = slugifyPath(page.slug || page.title) || existing.slug;
     const clash = await env.DB.prepare(
       "SELECT id FROM pages WHERE slug = ? AND id != ?"
     )
@@ -50,7 +51,7 @@ export async function onRequestPut(context) {
     if (clash) slug = `${slug}-${params.id}`;
   } else if (page.slug && page.slug !== "") {
     // allow turning the home page into a normal page only if explicitly changed
-    slug = slugify(page.slug);
+    slug = slugifyPath(page.slug);
   }
 
   await env.DB.prepare(

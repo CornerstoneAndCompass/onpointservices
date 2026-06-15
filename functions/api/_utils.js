@@ -146,6 +146,20 @@ export function slugify(str) {
     .slice(0, 80);
 }
 
+// Path-style slug that PRESERVES slashes, for nested pages like
+// "services/garden-maintenance". Without this, slugify() turns the slash
+// into a hyphen and breaks the page URL on every save.
+export function slugifyPath(str) {
+  return String(str || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9/]+/g, "-")
+    .replace(/-*\/-*/g, "/")
+    .replace(/\/{2,}/g, "/")
+    .replace(/^[-/]+|[-/]+$/g, "")
+    .slice(0, 100);
+}
+
 export async function readBody(request) {
   try {
     return await request.json();
