@@ -52,7 +52,7 @@ toastTimer = setTimeout(() => t.remove(), 3500);
 }
 
 /* ---------- state ---------- */
-const state = { user: null, schemas: {}, tab: "pages" };
+const state = { user: null, schemas: {}, tab: "pages", unreadEnq: 0 };
 
 /* ---------- boot ---------- */
 async function boot() {
@@ -143,6 +143,25 @@ await api.post("/api/auth/logout"); location.reload();
 const body = el("div", { class: "wrap", id: "view" });
 mount(el("div", {}, topbar, body));
 renderTab();
+refreshEnqBadge();
+}
+
+/* unread-enquiry badge on the Enquiries tab */
+function updateEnqBadge() {
+const btn = document.getElementById("tab-enquiries");
+if (!btn) return;
+let b = btn.querySelector(".tab-badge");
+if (state.unreadEnq > 0) {
+if (!b) { b = el("span", { class: "tab-badge" }); btn.appendChild(b); }
+b.textContent = String(state.unreadEnq);
+} else if (b) { b.remove(); }
+}
+async function refreshEnqBadge() {
+try {
+const list = (await api.get("/api/enquiry")).enquiries || [];
+state.unreadEnq = list.filter(e => !e.is_read).length;
+updateEnqBadge();
+} catch (e) {}
 }
 
 function renderTab() {
@@ -151,10 +170,12 @@ view.innerHTML = "";
 const tabs = el("div", { class: "tabs" },
 ...[["pages", "Pages"], ["blog", "Blog"], ["media", "Media"], ["enquiries", "Enquiries"], ["redirects", "Redirects"], ["settings", "Settings"], ["users", "Users"]]
 .map(([k, label]) => el("button", {
+id: "tab-" + k,
 class: "tab" + (state.tab === k ? " active" : ""),
 onclick: () => { state.tab = k; renderTab(); }
 }, label)));
 view.appendChild(tabs);
+updateEnqBadge();
 const slot = el("div", { id: "slot" });
 view.appendChild(slot);
 if (state.tab === "pages") viewPagesList(slot);
@@ -601,8 +622,18 @@ try { list = (await api.get("/api/enquiry")).enquiries; }
 catch (e) { slot.innerHTML = ""; slot.appendChild(el("div", { class: "empty" }, e.message)); return; }
 slot.innerHTML = "";
 
-slot.appendChild(el("div", { class: "page-title" }, "Enquiries"));
-slot.appendChild(el("div", { class: "page-sub" }, "Contact form submissions from the website."));
+const unread = list.filter(e => !e.is_read).length;
+state.unreadEnq = unread; updateEnqBadge();
+
+slot.appendChild(el("div", { class: "head-flex" },
+el("div", {},
+el("div", { class: "page-title" }, "Enquiries"),
+el("div", { class: "page-sub" }, list.length + " total · " + unread + " unread. Every contact-form submission is logged here and emailed to you.")),
+unread ? el("button", { class: "btn btn-sm", onclick: async () => {
+try { await api.put("/api/enquiry?all=1", { is_read: true }); toast("All marked read"); renderTab(); }
+catch (e) { toast(e.message, true); }
+}}, "Mark all read") : null
+));
 
 if (!list.length) { slot.appendChild(el("div", { class: "empty" }, "No enquiries yet.")); return; }
 
@@ -611,30 +642,37 @@ const detail = el("div", { class: "enquiry-detail", style: "display:none;" },
 el("div", { class: "card", style: "margin-top:6px;" },
 el("div", { class: "inline-note", style: "margin-bottom:10px;" },
 "Email: ",
-e.email
-? el("a", { href: "mailto:" + e.email, style: "color:var(--gold);" }, e.email)
-: "(none)",
-e.phone ? " Phone: " + e.phone : "",
-e.source ? " Source: " + e.source : ""),
+e.email ? el("a", { href: "mailto:" + e.email, style: "color:var(--gold);" }, e.email) : "(none)",
+e.phone ? " · Phone: " : "",
+e.phone ? el("a", { href: "tel:" + e.phone, style: "color:var(--gold);" }, e.phone) : "",
+e.source ? " · Source: " + e.source : ""),
 e.message
 ? el("p", { style: "white-space:pre-wrap; margin:0;" }, e.message)
 : el("p", { class: "inline-note", style: "margin:0;" }, "(no message)")
 ));
 
-const caret = el("span", { class: "meta", style: "margin-right:10px;" }, "▸");
+const dot = el("span", { class: "enq-dot" + (e.is_read ? " read" : "") });
+const caret = el("span", { class: "meta", style: "margin-right:8px;" }, "▸");
+const nameEl = el("h3", { style: e.is_read ? "font-weight:500;" : "" }, e.name || "(no name)",
+e.email ? el("span", { style: "color:var(--muted); font-weight:400; margin-left:8px;" }, e.email) : null);
+
 const row = el("div", {
-class: "list-row", style: "cursor:pointer; margin-bottom:0;",
-onclick: () => {
+class: "list-row", style: "cursor:pointer; margin-bottom:0;" + (e.is_read ? "" : " border-left:3px solid var(--gold);"),
+onclick: async () => {
 const open = detail.style.display !== "none";
 detail.style.display = open ? "none" : "block";
 caret.textContent = open ? "▸" : "▾";
+if (!open && !e.is_read) {
+e.is_read = 1; dot.classList.add("read"); nameEl.style.fontWeight = "500"; row.style.borderLeft = "none";
+state.unreadEnq = Math.max(0, state.unreadEnq - 1); updateEnqBadge();
+try { await api.put("/api/enquiry?id=" + e.id, { is_read: true }); } catch (err) {}
+}
 }
 },
 el("div", { class: "row-main", style: "display:flex; align-items:center;" },
-caret,
+caret, dot,
 el("div", {},
-el("h3", {}, e.name || "(no name)",
-e.email ? el("span", { style: "color:var(--muted); font-weight:400; margin-left:8px;" }, e.email) : null),
+nameEl,
 el("div", { class: "meta" }, (e.created_at || "") + (e.source ? " · " + e.source : "")))),
 el("div", { class: "row-actions" },
 el("button", {

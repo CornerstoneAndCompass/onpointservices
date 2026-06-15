@@ -37,6 +37,23 @@ export async function onRequestPost(context) {
 
 const SENDER = "hello@onpointservices.co.nz"; // SPF-authorised for smtp2go on this domain
 
+/* PUT /api/enquiry?id=123  {is_read:true}   — mark read/unread
+   PUT /api/enquiry?all=1   {is_read:true}   — mark all */
+export async function onRequestPut(context) {
+  const { request, env } = context;
+  const url = new URL(request.url);
+  const body = await readBody(request);
+  const isRead = body.is_read ? 1 : 0;
+  if (url.searchParams.get("all")) {
+    await env.DB.prepare("UPDATE enquiries SET is_read = ?").bind(isRead).run();
+    return json({ ok: true });
+  }
+  const id = url.searchParams.get("id");
+  if (!id) return err("Missing id.");
+  await env.DB.prepare("UPDATE enquiries SET is_read = ? WHERE id = ?").bind(isRead, id).run();
+  return json({ ok: true });
+}
+
 /* DELETE /api/enquiry?id=123 */
 export async function onRequestDelete(context) {
   const { request, env } = context;

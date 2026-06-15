@@ -227,3 +227,16 @@ input, textarea, select { font-family: var(--sans); }
   padding: 14px 18px; border-bottom: 1px solid var(--line);
 }
 .modal-body { padding: 18px; overflow-y: auto; }
+
+/* ===== ENQUIRY TRACKER ===== */
+.tab-badge {
+  display: inline-block; margin-left: 6px; background: var(--gold); color: var(--ink);
+  font-size: 0.68rem; font-weight: 700; min-width: 18px; height: 18px; line-height: 18px;
+  text-align: center; border-radius: 9px; padding: 0 5px; vertical-align: middle;
+}
+.enq-dot {
+  display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--gold); margin-right: 10px; flex: 0 0 9px;
+  box-shadow: 0 0 6px rgba(244,197,24,0.5);
+}
+.enq-dot.read { background: var(--line-2); box-shadow: none; }
