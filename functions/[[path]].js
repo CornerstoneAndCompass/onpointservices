@@ -80,6 +80,32 @@ async function notFound(env) {
   return html(renderSimple(page, inner, settings), 404);
 }
 
+// A page/blog miss: redirect if an admin redirect exists, otherwise log the
+// 404 (for the admin tracker) and render the 404 page.
+async function handleMiss(context, pathname) {
+  const { env, request } = context;
+  try {
+    const r = await env.DB.prepare("SELECT to_path FROM redirects WHERE from_path = ?").bind(pathname).first();
+    if (r && r.to_path) {
+      const dest = /^https?:\/\//i.test(r.to_path) ? r.to_path : SITE + (r.to_path.startsWith("/") ? r.to_path : "/" + r.to_path);
+      return Response.redirect(dest, 301);
+    }
+  } catch {}
+  // Log the 404 (best-effort, non-blocking)
+  const referer = request.headers.get("referer") || "";
+  context.waitUntil(
+    env.DB.prepare(
+      `INSERT INTO not_found_log (path, hits, last_referer, last_seen)
+       VALUES (?, 1, ?, datetime('now'))
+       ON CONFLICT(path) DO UPDATE SET hits = hits + 1, last_referer = excluded.last_referer, last_seen = datetime('now')`
+    )
+      .bind(pathname.slice(0, 512), referer.slice(0, 512))
+      .run()
+      .catch(() => {})
+  );
+  return notFound(env);
+}
+
 export async function onRequestGet(context) {
   const { env, params, request } = context;
   const pathname = new URL(request.url).pathname;
@@ -119,12 +145,12 @@ export async function onRequestGet(context) {
     if (slug.startsWith("blog/")) {
       const postSlug = slug.slice("blog/".length);
       const post = await env.DB.prepare("SELECT * FROM blog_posts WHERE slug = ? AND published = 1").bind(postSlug).first();
-      if (!post) return await notFound(env);
+      if (!post) return await handleMiss(context, pathname);
       return html(renderBlogPost(post, await getSettings(env)));
     }
     // Normal CMS page
     const page = await env.DB.prepare("SELECT * FROM pages WHERE slug = ? AND published = 1").bind(slug).first();
-    if (!page) return await notFound(env);
+    if (!page) return await handleMiss(context, pathname);
     return html(await renderCmsPage(env, page));
   } catch (e) {
     return html("<h1>Something went wrong</h1><p>Please try again shortly.</p>", 500);

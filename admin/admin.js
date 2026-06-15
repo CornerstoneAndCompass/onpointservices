@@ -149,7 +149,7 @@ function renderTab() {
 const view = document.getElementById("view");
 view.innerHTML = "";
 const tabs = el("div", { class: "tabs" },
-...[["pages", "Pages"], ["blog", "Blog"], ["media", "Media"], ["enquiries", "Enquiries"], ["settings", "Settings"], ["users", "Users"]]
+...[["pages", "Pages"], ["blog", "Blog"], ["media", "Media"], ["enquiries", "Enquiries"], ["redirects", "Redirects"], ["settings", "Settings"], ["users", "Users"]]
 .map(([k, label]) => el("button", {
 class: "tab" + (state.tab === k ? " active" : ""),
 onclick: () => { state.tab = k; renderTab(); }
@@ -161,6 +161,7 @@ if (state.tab === "pages") viewPagesList(slot);
 else if (state.tab === "blog") viewBlogList(slot);
 else if (state.tab === "media") viewMedia(slot);
 else if (state.tab === "enquiries") viewEnquiries(slot);
+else if (state.tab === "redirects") viewRedirects(slot);
 else if (state.tab === "settings") viewSettings(slot);
 else viewUsers(slot);
 }
@@ -1011,6 +1012,83 @@ el("div", { class: "media-meta" }, el("div", { class: "media-label" }, m.label |
 body.appendChild(grid);
 }
 load();
+}
+
+/* ============================================================
+REDIRECTS + 404 TRACKER
+============================================================ */
+async function viewRedirects(slot) {
+slot.appendChild(el("div", { class: "spinner" }, "Loading..."));
+let notfound = [], redirects = [];
+try {
+notfound = (await api.get("/api/notfound")).notfound || [];
+redirects = (await api.get("/api/redirects")).redirects || [];
+} catch (e) { slot.innerHTML = ""; slot.appendChild(el("div", { class: "empty" }, e.message)); return; }
+slot.innerHTML = "";
+
+slot.appendChild(el("div", { class: "page-title" }, "Redirects & 404s"));
+slot.appendChild(el("div", { class: "page-sub" }, "See which missing pages visitors hit, and send those URLs somewhere useful so no one lands on a dead end."));
+
+/* --- add redirect form (also targeted by 'Create redirect' buttons) --- */
+const fromInp = el("input", { type: "text", placeholder: "/old-page" });
+const toInp = el("input", { type: "text", placeholder: "/new-page" });
+async function saveRedirect(from, to) {
+try { await api.post("/api/redirects", { from_path: from, to_path: to }); toast("Redirect saved — live now"); renderTab(); }
+catch (e) { toast(e.message, true); }
+}
+slot.appendChild(el("div", { class: "section-label" }, "Add a redirect"));
+slot.appendChild(el("div", { class: "card" },
+el("div", { class: "grid-2", style: "gap:10px;" },
+el("div", { class: "field" }, el("label", {}, "Old path (what visitors hit)"), fromInp),
+el("div", { class: "field" }, el("label", {}, "Send them to"), toInp)),
+el("div", { class: "row-actions", style: "margin-top:6px;" },
+el("button", { class: "btn btn-gold btn-sm", onclick: () => {
+if (!fromInp.value.trim() || !toInp.value.trim()) { toast("Fill in both paths", true); return; }
+saveRedirect(fromInp.value.trim(), toInp.value.trim());
+}}, "Save redirect")),
+el("div", { class: "help" }, "301 (permanent) redirect. Destination can be a path like /services or a full URL.")
+));
+
+/* --- existing redirects --- */
+slot.appendChild(el("div", { class: "section-label" }, "Active redirects (" + redirects.length + ")"));
+if (!redirects.length) slot.appendChild(el("div", { class: "empty" }, "No redirects yet."));
+redirects.forEach(r => {
+slot.appendChild(el("div", { class: "list-row" },
+el("div", { class: "row-main" },
+el("h3", { style: "font-size:0.95rem;" }, r.from_path, el("span", { style: "color:var(--muted);" }, "  →  "), el("span", { style: "color:var(--gold);" }, r.to_path))),
+el("div", { class: "row-actions" },
+el("button", { class: "btn btn-sm btn-danger", onclick: async () => {
+if (!confirm("Delete this redirect?")) return;
+try { await api.del("/api/redirects/" + r.id); toast("Deleted"); renderTab(); } catch (e) { toast(e.message, true); }
+}}, "Delete"))));
+});
+
+/* --- 404 log --- */
+slot.appendChild(el("div", { class: "section-label", style: "margin-top:28px;" }, "404 errors logged (" + notfound.length + ")"));
+if (!notfound.length) {
+slot.appendChild(el("div", { class: "empty" }, "No 404s recorded. Nice — every visited URL is resolving."));
+} else {
+slot.appendChild(el("div", { class: "head-flex" },
+el("div", { class: "page-sub" }, "Most-hit first. Click 'Create redirect' to point one at a real page."),
+el("button", { class: "btn btn-sm", onclick: async () => {
+if (!confirm("Clear the whole 404 log?")) return;
+try { await api.del("/api/notfound?all=1"); toast("Log cleared"); renderTab(); } catch (e) { toast(e.message, true); }
+}}, "Clear log")));
+notfound.forEach(n => {
+slot.appendChild(el("div", { class: "list-row" },
+el("div", { class: "row-main" },
+el("h3", { style: "font-size:0.95rem;" }, n.path, el("span", { class: "pill off", style: "margin-left:10px;" }, n.hits + (n.hits === 1 ? " hit" : " hits"))),
+el("div", { class: "meta" }, "Last seen " + (n.last_seen || "") + (n.last_referer ? " · from " + n.last_referer : ""))),
+el("div", { class: "row-actions" },
+el("button", { class: "btn btn-sm btn-gold", onclick: () => {
+fromInp.value = n.path; toInp.value = ""; toInp.focus();
+window.scrollTo({ top: 0, behavior: "smooth" });
+}}, "Create redirect"),
+el("button", { class: "btn btn-sm", onclick: async () => {
+try { await api.del("/api/notfound?path=" + encodeURIComponent(n.path)); toast("Dismissed"); renderTab(); } catch (e) { toast(e.message, true); }
+}}, "Dismiss"))));
+});
+}
 }
 
 /* ---------- go ---------- */
