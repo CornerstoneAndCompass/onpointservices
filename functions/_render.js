@@ -263,7 +263,7 @@ const R = {
     const phoneHref = settings.phone_href ? "tel:" + settings.phone_href.replace(/[^+\d]/g, "") : "tel:+64212255533";
     const phone = settings.phone || "021 225 5533";
     const cta = settings.nav_cta_label || "021 CALL JEFF";
-    const email = settings.email || "hello@onpointservices.co.nz";
+    const email = settings.email || "jeff@onpointservices.co.nz";
     const fb = settings.facebook_url || "https://www.facebook.com/";
     return `<section class="section"><div class="container">
     <div class="contact-grid">
@@ -445,7 +445,7 @@ function renderFooter(settings) {
   const phoneHref = settings.phone_href ? "tel:" + settings.phone_href.replace(/[^+\d]/g, "") : "tel:+64212255533";
   const phone = settings.phone || "021 225 5533";
   const cta = settings.nav_cta_label || "021 CALL JEFF";
-  const email = settings.email || "hello@onpointservices.co.nz";
+  const email = settings.email || "jeff@onpointservices.co.nz";
   const fb = settings.facebook_url || "https://www.facebook.com/";
   const colsHtml = cols
     .map(
@@ -499,7 +499,7 @@ function localBusiness(settings) {
     logo: absUrl(settings.logo_url || "/assets/logo.png"),
     image: absUrl("/assets/projects/deck-hardwood-1.jpg"),
     telephone: settings.phone_href || "+64212255533",
-    email: settings.email || "hello@onpointservices.co.nz",
+    email: settings.email || "jeff@onpointservices.co.nz",
     priceRange: "$$",
     address: { "@type": "PostalAddress", addressLocality: "Auckland", addressRegion: "Auckland", addressCountry: "NZ" },
     areaServed: { "@type": "City", name: "Auckland" },

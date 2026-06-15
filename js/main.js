@@ -138,7 +138,7 @@
         form.reset();
       } catch (err) {
         if (status) {
-          status.innerHTML = 'Sorry, that did not send. Please call Jeff on <a href="tel:+64212255533" style="color:#F4C518">021 225 5533</a> or email <a href="mailto:hello@onpointservices.co.nz" style="color:#F4C518">hello@onpointservices.co.nz</a>.';
+          status.innerHTML = 'Sorry, that did not send. Please call Jeff on <a href="tel:+64212255533" style="color:#F4C518">021 225 5533</a> or email <a href="mailto:jeff@onpointservices.co.nz" style="color:#F4C518">jeff@onpointservices.co.nz</a>.';
           status.style.color = '#ff6b6b';
         }
       } finally {

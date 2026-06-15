@@ -35,7 +35,7 @@ export async function onRequestPost(context) {
   return json({ ok: true });
 }
 
-const SENDER = "hello@onpointservices.co.nz"; // SPF-authorised for smtp2go on this domain
+const SENDER = "jeff@onpointservices.co.nz"; // SPF-authorised for smtp2go on this domain
 
 /* PUT /api/enquiry?id=123  {is_read:true}   — mark read/unread
    PUT /api/enquiry?all=1   {is_read:true}   — mark all */
@@ -71,7 +71,7 @@ async function notify(env, e) {
   const to =
     (await getSetting(env, "notification_email")) ||
     (await getSetting(env, "email")) ||
-    "hello@onpointservices.co.nz";
+    "jeff@onpointservices.co.nz";
 
   const safe = (s) => String(s || "").replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]));
   const subject = `New website enquiry — ${e.name || "no name"}`;
