@@ -266,7 +266,7 @@ const R = {
     const email = settings.email || "hello@onpointservices.co.nz";
     const fb = settings.facebook_url || "https://www.facebook.com/";
     return `<section class="section"><div class="container">
-    <div class="grid contact-grid" style="grid-template-columns:1fr 1.6fr; gap:60px;">
+    <div class="contact-grid">
       <div class="reveal">
         <span class="eyebrow">The fastest way</span>
         <h2 class="display display-md mt-24 mb-24">${esc(d.heading || "Just call.")}</h2>
