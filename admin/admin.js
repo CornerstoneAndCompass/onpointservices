@@ -168,7 +168,7 @@ function renderTab() {
 const view = document.getElementById("view");
 view.innerHTML = "";
 const tabs = el("div", { class: "tabs" },
-...[["pages", "Pages"], ["blog", "Blog"], ["media", "Media"], ["enquiries", "Enquiries"], ["redirects", "Redirects"], ["settings", "Settings"], ["users", "Users"]]
+...[["pages", "Pages"], ["blog", "Blog"], ["media", "Media"], ["enquiries", "Enquiries"], ["seo", "SEO"], ["redirects", "Redirects"], ["settings", "Settings"], ["users", "Users"]]
 .map(([k, label]) => el("button", {
 id: "tab-" + k,
 class: "tab" + (state.tab === k ? " active" : ""),
@@ -182,9 +182,95 @@ if (state.tab === "pages") viewPagesList(slot);
 else if (state.tab === "blog") viewBlogList(slot);
 else if (state.tab === "media") viewMedia(slot);
 else if (state.tab === "enquiries") viewEnquiries(slot);
+else if (state.tab === "seo") viewSeo(slot);
 else if (state.tab === "redirects") viewRedirects(slot);
 else if (state.tab === "settings") viewSettings(slot);
 else viewUsers(slot);
+}
+
+/* ============================================================
+SEO - on-page audit dashboard
+============================================================ */
+function seoGrade(score) { return score >= 90 ? "good" : score >= 70 ? "warn" : "bad"; }
+
+async function viewSeo(slot) {
+slot.appendChild(el("div", { class: "spinner" }, "Running SEO audit..."));
+let data;
+try { data = await api.get("/api/seo"); }
+catch (e) { slot.innerHTML = ""; slot.appendChild(el("div", { class: "empty" }, e.message)); return; }
+slot.innerHTML = "";
+const s = data.site;
+
+slot.appendChild(el("div", { class: "head-flex" },
+el("div", {},
+el("div", { class: "page-title" }, "SEO"),
+el("div", { class: "page-sub" }, "On-page audit of every published page and post" +
+(data.generatedAt ? " · generated " + new Date(data.generatedAt).toLocaleString() : ""))),
+el("button", { class: "btn btn-sm", onclick: () => renderTab() }, "↻ Re-run audit")
+));
+
+const stat = (label, value, cls) => el("div", { class: "seo-stat" },
+el("div", { class: "seo-stat-num" + (cls ? " " + cls : "") }, String(value)),
+el("div", { class: "seo-stat-label" }, label));
+slot.appendChild(el("div", { class: "seo-stats" },
+stat("Avg score", s.avgScore, seoGrade(s.avgScore)),
+stat("Pages", s.pages),
+stat("Posts", s.posts),
+stat("Open issues", s.issues, s.issues ? "warn" : "good"),
+stat("Missing descriptions", s.missingDesc, s.missingDesc ? "warn" : "good"),
+stat("Noindex", s.noindex, s.noindex ? "warn" : ""),
+stat("404s logged", s.notFound, s.notFound ? "warn" : "good"),
+stat("Redirects", s.redirects)
+));
+
+slot.appendChild(el("div", { class: "section-label" }, "Site-wide"));
+const chk = (ok, label) => el("span", { class: "pill " + (ok ? "on" : "off") }, (ok ? "✓ " : "✕ ") + label);
+slot.appendChild(el("div", { class: "card", style: "display:flex;gap:10px;flex-wrap:wrap;align-items:center;" },
+chk(s.sitemap, "sitemap.xml"),
+chk(s.robots, "robots.txt"),
+chk(s.robotsHasSitemap, "robots → sitemap"),
+el("span", { class: "inline-note", style: "margin-left:auto;" },
+s.notFound + " broken URL" + (s.notFound === 1 ? "" : "s") + " logged (" + s.notFoundHits + " hits) · see Redirects tab")
+));
+
+slot.appendChild(el("div", { class: "section-label" }, "Pages & posts — lowest score first"));
+(data.items || []).forEach((it) => slot.appendChild(seoRow(it)));
+}
+
+function seoMetric(label, val) {
+return el("div", { class: "seo-metric" }, el("span", {}, label), el("strong", {}, val));
+}
+
+function seoRow(it) {
+const issues = (it.issues || []).filter((x) => x.level !== "good");
+const detail = el("div", { class: "seo-detail hidden" });
+detail.appendChild(el("div", { class: "seo-metrics" },
+seoMetric("Title", it.titleLen + " chars" + (it.hasCustomTitle ? "" : " (default)")),
+seoMetric("Description", it.hasCustomDesc ? it.descLen + " chars" : "missing"),
+seoMetric("H1", String(it.h1)),
+seoMetric("Words", String(it.words)),
+seoMetric("Images", it.imgs + (it.imgsNoAlt ? " (" + it.imgsNoAlt + " no alt)" : "")),
+seoMetric("Internal links", String(it.internalLinks))
+));
+const list = el("div", { class: "seo-issues" });
+(it.issues || []).forEach((iss) =>
+list.appendChild(el("div", { class: "seo-issue " + iss.level },
+(iss.level === "bad" ? "● " : iss.level === "warn" ? "○ " : "✓ ") + iss.msg)));
+detail.appendChild(list);
+
+const head = el("div", { class: "list-row", style: "cursor:pointer;",
+onclick: () => detail.classList.toggle("hidden") },
+el("div", { class: "row-main", style: "display:flex;align-items:center;gap:12px;" },
+el("span", { class: "seo-badge " + seoGrade(it.score) }, String(it.score)),
+el("div", { style: "min-width:0;" },
+el("h3", {}, it.url === "/" ? "/ (home)" : it.url),
+el("div", { class: "meta" }, it.kind + " · " +
+(issues.length ? issues.length + " issue" + (issues.length > 1 ? "s" : "") : "clean") +
+" · " + it.words + " words"))),
+el("a", { class: "btn btn-sm", href: it.url, target: "_blank",
+onclick: (e) => e.stopPropagation() }, "Open ↗")
+);
+return el("div", {}, head, detail);
 }
 
 /* ============================================================

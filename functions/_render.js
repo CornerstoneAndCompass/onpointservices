@@ -794,4 +794,15 @@ export function renderPage(page, sections, settingsRows) {
   return shell(page, settings, body, opts);
 }
 
+/* Content-only HTML (enabled sections, no nav/footer/head) — used by the SEO
+   audit so word counts, H1s, images and links reflect the page body, not the
+   shared chrome. */
+export function renderSectionsBody(sections, settingsRows) {
+  const settings = settingsObj(settingsRows);
+  return arr(sections)
+    .filter((s) => s.enabled)
+    .map((s) => renderSection(s, settings))
+    .join("\n");
+}
+
 export { esc };
