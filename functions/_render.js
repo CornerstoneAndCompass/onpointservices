@@ -261,9 +261,9 @@ const R = {
             .slice(0, 2)
             .join("")
             .toUpperCase() || "G";
-        const avatar = r.photo
-          ? `<img src="${attr(r.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy" width="46" height="46" style="width:46px; height:46px; border-radius:50%; object-fit:cover; flex:0 0 46px;" />`
-          : `<span aria-hidden="true" style="width:46px; height:46px; border-radius:50%; background:var(--gold); color:var(--ink); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:1.05rem; flex:0 0 46px;">${esc(initials)}</span>`;
+        // Uniform gold-initials avatars for a consistent row (also matches the
+        // site's testimonial avatar). Google photos intentionally not shown.
+        const avatar = `<span aria-hidden="true" style="width:46px; height:46px; border-radius:50%; background:var(--gold); color:var(--ink); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:1.05rem; flex:0 0 46px;">${esc(initials)}</span>`;
         const body = esc(r.text).replace(/\r?\n/g, "<br>");
         return `<div class="reveal" style="background:var(--ink-2); border:1px solid var(--line-soft); border-radius:6px; padding:28px; display:flex; flex-direction:column; gap:16px;">
         <div style="display:flex; align-items:center; gap:14px;">
