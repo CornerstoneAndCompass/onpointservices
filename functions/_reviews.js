@@ -16,6 +16,12 @@
      - google_reviews_error     — last error message ("" when healthy)
    ============================================================ */
 
+// Verified public Google Place ID for "On Point Services" (Landscaper,
+// Auckland — onpointservices.co.nz, +64 21 225 5533). Used when no
+// google_place_id setting is present, so the feature works with only the
+// API key configured. Override any time via a google_place_id setting.
+const DEFAULT_PLACE_ID = "ChIJgZy42W__-CIRqg9bep5teTU";
+
 const DETAILS_FIELDS = "id,displayName,rating,userRatingCount,googleMapsUri,reviews";
 const FRESH_TTL_MS = 12 * 60 * 60 * 1000; // once we have data, refresh ~twice a day
 const RETRY_MS = 5 * 60 * 1000; // before the first success, retry every 5 min
@@ -40,8 +46,8 @@ export function maybeRefreshReviews(context, settingsRows) {
     const { env } = context;
     if (!env || !env.GOOGLE_MAPS_API_KEY) return;
     const s = toMap(settingsRows);
-    const placeId = s.google_place_id;
-    const query = s.google_place_query;
+    const placeId = s.google_place_id || DEFAULT_PLACE_ID;
+    const query = s.google_place_query; // optional: resolve a different listing by name
     if (!placeId && !query) return;
 
     const hasData = !!s.google_reviews_json;
