@@ -240,6 +240,28 @@ const TYPES = {
     ],
   },
 
+  reviews: {
+    label: "Google reviews",
+    description: "Live Google reviews + overall rating. Synced automatically from Google.",
+    fields: [
+      { name: "heading", label: "Heading", type: "text" },
+      { name: "heading_gold", label: "Heading (gold part)", type: "text" },
+      { name: "lede", label: "Intro paragraph", type: "textarea" },
+      { name: "max", label: "Max reviews to show", type: "number", default: 6 },
+      {
+        name: "min_rating",
+        label: "Minimum star rating to show",
+        type: "select",
+        options: [
+          { value: "0", label: "Show all" },
+          { value: "3", label: "3 stars and up" },
+          { value: "4", label: "4 stars and up" },
+          { value: "5", label: "5 stars only" },
+        ],
+      },
+    ],
+  },
+
   stats: {
     label: "Stats strip",
     description: "Row of headline numbers.",

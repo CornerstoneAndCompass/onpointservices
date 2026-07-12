@@ -24,6 +24,21 @@ const ICONS = {
 
 const arrow = '<span class="arrow"></span>';
 
+/* gold star row (rating 1–5), used by the Google reviews section */
+function starRow(rating, size = 16) {
+  const n = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
+  let out = "";
+  for (let i = 1; i <= 5; i++) {
+    const on = i <= n;
+    out += `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="${on ? "#F4C518" : "none"}" stroke="#F4C518" stroke-width="1.4" aria-hidden="true" style="flex:0 0 auto;"><path d="M12 2.5l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 18.8l-5.8 3.1 1.1-6.5L2.6 9.3l6.5-.9L12 2.5Z"/></svg>`;
+  }
+  return `<span role="img" aria-label="${n} out of 5 stars" style="display:inline-flex; gap:2px; align-items:center;">${out}</span>`;
+}
+
+/* multi-colour Google "G" — the required attribution mark for review content */
+const GOOGLE_G =
+  '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="flex:0 0 auto;"><path fill="#4285F4" d="M23.5 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h6.47a5.53 5.53 0 0 1-2.4 3.63v3h3.88c2.27-2.09 3.55-5.17 3.55-8.87Z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.08 7.95-2.91l-3.88-3.01c-1.08.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09A12 12 0 0 0 12 24Z"/><path fill="#FBBC05" d="M5.27 14.27a7.2 7.2 0 0 1 0-4.54V6.64H1.29a12 12 0 0 0 0 10.72l3.98-3.09Z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.44-3.44A12 12 0 0 0 1.29 6.64l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75Z"/></svg>';
+
 function btn(b) {
   const cls = b.style === "ghost" ? "btn btn-ghost" : "btn btn-primary";
   const isTel = String(b.url || "").startsWith("tel:");
@@ -202,6 +217,76 @@ const R = {
       <div class="who"><strong>${esc(d.author)}</strong><span>${esc(d.role)}</span></div>
     </div>
   </div></div></section>`;
+  },
+
+  reviews(d, settings) {
+    let cache = {};
+    try {
+      cache = JSON.parse((settings && settings.google_reviews_json) || "{}");
+    } catch {
+      cache = {};
+    }
+    const all = arr(cache.reviews);
+    if (!all.length) return ""; // nothing synced yet — render nothing rather than an empty shell
+    const min = parseInt(d.min_rating, 10) || 0;
+    const max = parseInt(d.max, 10) || 6;
+    const list = all
+      .filter((r) => (Number(r.rating) || 0) >= min && String(r.text || "").trim())
+      .slice(0, max);
+    if (!list.length) return "";
+
+    const overall = cache.rating ? Number(cache.rating).toFixed(1) : "";
+    const count = cache.count || 0;
+    const mapsUri = cache.maps_uri || "";
+
+    const summary = `<div class="reveal" style="display:flex; align-items:center; gap:22px; flex-wrap:wrap; margin-bottom:40px; padding:24px 28px; background:var(--ink-2); border:1px solid var(--line-soft); border-radius:6px;">
+      ${overall ? `<div style="font-family:var(--font-display); font-size:2.6rem; line-height:1; color:var(--gold);">${esc(overall)}</div>` : ""}
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        ${starRow(overall || 5, 18)}
+        <div style="display:flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:0.72rem; letter-spacing:0.16em; text-transform:uppercase; color:var(--bone-dim);">
+          ${GOOGLE_G}<span>${count ? esc(count) + " Google reviews" : "Reviews from Google"}</span>
+        </div>
+      </div>
+      ${mapsUri ? `<a href="${attr(mapsUri)}" target="_blank" rel="noopener" class="btn btn-ghost" style="margin-left:auto;">Read on Google ${arrow}</a>` : ""}
+    </div>`;
+
+    const cards = list
+      .map((r) => {
+        const name = r.author || "Google user";
+        const initials =
+          name
+            .trim()
+            .split(/\s+/)
+            .map((w) => w[0] || "")
+            .slice(0, 2)
+            .join("")
+            .toUpperCase() || "G";
+        const avatar = r.photo
+          ? `<img src="${attr(r.photo)}" alt="" referrerpolicy="no-referrer" loading="lazy" width="46" height="46" style="width:46px; height:46px; border-radius:50%; object-fit:cover; flex:0 0 46px;" />`
+          : `<span aria-hidden="true" style="width:46px; height:46px; border-radius:50%; background:var(--gold); color:var(--ink); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:1.05rem; flex:0 0 46px;">${esc(initials)}</span>`;
+        const body = esc(r.text).replace(/\r?\n/g, "<br>");
+        return `<div class="reveal" style="background:var(--ink-2); border:1px solid var(--line-soft); border-radius:6px; padding:28px; display:flex; flex-direction:column; gap:16px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          ${avatar}
+          <div style="min-width:0; flex:1;">
+            <strong style="display:block; color:var(--bone); font-size:0.98rem;">${esc(name)}</strong>
+            ${r.when ? `<span style="font-family:var(--font-mono); font-size:0.66rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--bone-dim);">${esc(r.when)}</span>` : ""}
+          </div>
+          <span style="opacity:0.85;">${GOOGLE_G}</span>
+        </div>
+        ${starRow(r.rating, 15)}
+        <p style="color:var(--bone-dim); font-size:0.96rem; line-height:1.7; margin:0;">${body}</p>
+      </div>`;
+      })
+      .join("\n      ");
+
+    return `<section class="section"><div class="container">
+    ${sectionHead(d)}
+    ${summary}
+    <div class="grid grid-3">
+      ${cards}
+    </div>
+  </div></section>`;
   },
 
   cta(d) {

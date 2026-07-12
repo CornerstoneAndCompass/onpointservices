@@ -2,6 +2,7 @@
    Runs only for routes not handled by static assets (/assets, /css, /js,
    /admin) or more-specific functions (/api/*, /media/*). */
 import { renderPage, renderBlogIndex, renderBlogPost, renderSimple, SITE } from "./_render.js";
+import { maybeRefreshReviews } from "./_reviews.js";
 
 // Old static filenames -> CMS slugs, so existing links/bookmarks keep working.
 const LEGACY = {
@@ -52,7 +53,8 @@ async function sitemap(env) {
   });
 }
 
-async function renderCmsPage(env, page) {
+async function renderCmsPage(context, page) {
+  const { env } = context;
   const { results } = await env.DB.prepare(
     "SELECT type, enabled, data FROM sections WHERE page_id = ? ORDER BY sort_order"
   )
@@ -66,6 +68,7 @@ async function renderCmsPage(env, page) {
     return { type: s.type, enabled: s.enabled, data };
   });
   const settings = await getSettings(env);
+  maybeRefreshReviews(context, settings); // stale-while-revalidate Google reviews sync (non-blocking)
   return renderPage(page, sections, settings);
 }
 
@@ -151,7 +154,7 @@ export async function onRequestGet(context) {
     // Normal CMS page
     const page = await env.DB.prepare("SELECT * FROM pages WHERE slug = ? AND published = 1").bind(slug).first();
     if (!page) return await handleMiss(context, pathname);
-    return html(await renderCmsPage(env, page));
+    return html(await renderCmsPage(context, page));
   } catch (e) {
     return html("<h1>Something went wrong</h1><p>Please try again shortly.</p>", 500);
   }
