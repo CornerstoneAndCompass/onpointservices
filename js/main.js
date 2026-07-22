@@ -131,17 +131,17 @@
           body: JSON.stringify({ name, email, phone, message, source: 'Quote form — ' + location.pathname })
         });
         if (!res.ok) throw new Error('bad response');
-        if (status) {
-          status.textContent = 'Cheers ' + name.split(' ')[0] + ', your enquiry is in. Jeff will be in touch within one business day.';
-          status.style.color = '#F4C518';
-        }
+        // Sent — hand off to the thank-you page, which is what fires the ad
+        // conversion events. Reset first so hitting Back does not restore the
+        // filled form and invite a duplicate send. The button stays disabled
+        // while the browser navigates away.
         form.reset();
+        window.location.assign('/thank-you');
       } catch (err) {
         if (status) {
           status.innerHTML = 'Sorry, that did not send. Please call Jeff on <a href="tel:+64212255533" style="color:#F4C518">021 225 5533</a> or email <a href="mailto:jeff@onpointservices.co.nz" style="color:#F4C518">jeff@onpointservices.co.nz</a>.';
           status.style.color = '#ff6b6b';
         }
-      } finally {
         if (btn) { btn.disabled = false; }
       }
     });

@@ -24,6 +24,11 @@ const ICONS = {
 
 const arrow = '<span class="arrow"></span>';
 
+/* Slug of the post-enquiry thank-you page. The contact form redirects here on a
+   successful submit (js/main.js), and it is the only page that fires the ad
+   conversion events below. Keep in sync with the CMS page slug. */
+export const THANK_YOU_SLUG = "thank-you";
+
 /* gold star row (rating 1–5), used by the Google reviews section */
 function starRow(rating, size = 16) {
   const n = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
@@ -633,6 +638,8 @@ function renderHead(page, settings, opts) {
   const canonical = canonicalFor(page);
   const ogImg = absUrl(page.seo_og_image || opts.ogImage || "/assets/projects/deck-hardwood-1.jpg");
   const businessName = (settings.business_name_line1 || "On Point") + " " + (settings.business_name_line2 || "Services Ltd");
+  // Only the thank-you page counts as a conversion — every other page just gets PageView.
+  const isConversion = page.slug === THANK_YOU_SLUG;
   return `<!DOCTYPE html>
 <html lang="en-NZ">
 <head>
@@ -671,12 +678,16 @@ t.src=v;s=b.getElementsByTagName(e)[0];
 s.parentNode.insertBefore(t,s)}(window, document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
 fbq('init', '2425873347908572');
-fbq('track', 'PageView');
+fbq('track', 'PageView');${isConversion ? `
+fbq('track', 'Lead');` : ""}
 </script>
 <noscript><img height="1" width="1" style="display:none"
 src="https://www.facebook.com/tr?id=2425873347908572&ev=PageView&noscript=1"
 /></noscript>
-<!-- End Meta Pixel Code -->
+<!-- End Meta Pixel Code -->${isConversion ? `
+<!-- Google Ads conversion — thank-you page only. TODO: paste the event snippet
+     from Google Ads > Goals > Conversions here (the gtag.js base tag needs to
+     go in the block above this one, on every page). -->` : ""}
 </head>
 <body>`;
 }
