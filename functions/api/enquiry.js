@@ -74,7 +74,7 @@ async function notify(env, e) {
     "jeff@onpointservices.co.nz";
 
   const safe = (s) => String(s || "").replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]));
-  const subject = `New website enquiry — ${e.name || "no name"}`;
+  const subject = `New website enquiry from ${e.name || "no name"}`;
   const text =
     `New enquiry from the On Point website\n\n` +
     `Name:  ${e.name || "-"}\n` +

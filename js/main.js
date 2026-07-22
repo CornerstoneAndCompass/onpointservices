@@ -128,10 +128,10 @@
         const res = await fetch('/api/enquiry', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, phone, message, source: 'Quote form — ' + location.pathname })
+          body: JSON.stringify({ name, email, phone, message, source: 'Quote form: ' + location.pathname })
         });
         if (!res.ok) throw new Error('bad response');
-        // Sent — hand off to the thank-you page, which is what fires the ad
+        // Sent. Hand off to the thank-you page, which is what fires the ad
         // conversion events. Reset first so hitting Back does not restore the
         // filled form and invite a duplicate send. The button stays disabled
         // while the browser navigates away.

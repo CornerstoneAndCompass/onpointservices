@@ -638,7 +638,7 @@ function renderHead(page, settings, opts) {
   const canonical = canonicalFor(page);
   const ogImg = absUrl(page.seo_og_image || opts.ogImage || "/assets/projects/deck-hardwood-1.jpg");
   const businessName = (settings.business_name_line1 || "On Point") + " " + (settings.business_name_line2 || "Services Ltd");
-  // Only the thank-you page counts as a conversion — every other page just gets PageView.
+  // Only the thank-you page counts as a conversion. Every other page just gets PageView.
   const isConversion = page.slug === THANK_YOU_SLUG;
   return `<!DOCTYPE html>
 <html lang="en-NZ">
@@ -685,7 +685,7 @@ fbq('track', 'Lead');` : ""}
 src="https://www.facebook.com/tr?id=2425873347908572&ev=PageView&noscript=1"
 /></noscript>
 <!-- End Meta Pixel Code -->${isConversion ? `
-<!-- Google Ads conversion — thank-you page only. TODO: paste the event snippet
+<!-- Google Ads conversion, thank-you page only. TODO: paste the event snippet
      from Google Ads > Goals > Conversions here (the gtag.js base tag needs to
      go in the block above this one, on every page). -->` : ""}
 </head>
@@ -739,7 +739,7 @@ export function renderBlogIndex(blogPage, posts, settingsRows) {
     </a>`
         )
         .join("\n      ")
-    : `<p class="lede">No posts yet — check back soon.</p>`;
+    : `<p class="lede">No posts yet. Check back soon.</p>`;
   const inner = `<section class="page-header"><div class="topo-bg"></div><div class="container reveal">
     <div class="crumbs"><a href="/">Home</a><span class="sep">/</span><span>Blog</span></div>
     <h1>${esc(heading)}</h1>
