@@ -241,6 +241,44 @@ input, textarea, select { font-family: var(--sans); }
 }
 .enq-dot.read { background: var(--line-2); box-shadow: none; }
 
+/* ===== IMAGE FIELD (upload first) ===== */
+.imgf {
+  border: 1px solid var(--line-2); border-radius: 8px;
+  background: var(--ink); overflow: hidden; transition: border-color .15s, background .15s;
+}
+.imgf.drag { border-color: var(--gold); background: rgba(244, 197, 24, 0.06); }
+.imgf.busy { opacity: 0.55; pointer-events: none; }
+.imgf-drop {
+  padding: 30px 18px; text-align: center; cursor: pointer;
+  border-bottom: 1px solid var(--line);
+}
+.imgf-drop:hover { background: var(--ink-3); }
+.imgf-drop strong { display: block; color: var(--bone); margin-bottom: 4px; font-size: 0.92rem; }
+.imgf-drop span { font-size: 0.75rem; color: var(--muted); }
+.imgf-shot {
+  background: var(--ink-3); border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center; padding: 12px;
+}
+.imgf-shot img { max-height: 190px; max-width: 100%; border-radius: 6px; object-fit: contain; }
+.imgf-bar {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 10px 12px; background: var(--ink-3);
+}
+.imgf-name {
+  flex: 1; min-width: 0; font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.imgf-link { padding: 12px; border-top: 1px solid var(--line); }
+.imgf-link label {
+  display: block; font-size: 0.72rem; font-weight: 600;
+  color: var(--dim); margin-bottom: 5px;
+}
+.imgf .imgf-link input {
+  width: 100%; background: var(--ink); border: 1px solid var(--line-2);
+  color: var(--bone); padding: 8px 10px; border-radius: 6px; font-size: 0.84rem;
+}
+.imgf .imgf-link input:focus { outline: none; border-color: var(--gold); }
+
 /* ===== RICH TEXT EDITOR ===== */
 .rte {
   border: 1px solid var(--line-2); border-radius: 8px;

@@ -495,6 +495,66 @@ function iconBtn(label, onClick, extra) {
 return el("button", { class: "btn btn-icon btn-sm " + (extra || ""), type: "button", onclick: (e) => { e.preventDefault(); onClick(); } }, label);
 }
 
+/* Upload-first image field. A URL is still what gets stored, but nobody should
+   have to go and find one: drop a file on it, click it, or pick something
+   already in the library. Pasting a link is still there, just not the front door. */
+function imageField(value, onChange) {
+let url = value == null ? "" : String(value);
+const wrap = el("div", { class: "imgf" });
+const file = el("input", { type: "file", accept: "image/*", style: "display:none;" });
+
+const linkInp = el("input", { type: "text", placeholder: "https://example.com/photo.jpg" });
+const linkRow = el("div", { class: "imgf-link hidden" },
+el("label", {}, "Link to an image hosted somewhere else"), linkInp);
+linkInp.addEventListener("change", () => {
+const v = linkInp.value.trim();
+if (v) { linkRow.classList.add("hidden"); set(v); }
+});
+
+function set(next) { url = next || ""; onChange(url); render(); }
+
+async function upload(files) {
+const pick = [...files].filter(f => f.type && f.type.startsWith("image/"));
+if (!pick.length) { toast("That file is not an image", true); return; }
+wrap.classList.add("busy");
+const done = await uploadMediaFiles([pick[0]]);
+wrap.classList.remove("busy");
+if (done.length) { toast("Image uploaded"); set(done[0].url); }
+}
+
+function render() {
+wrap.innerHTML = "";
+if (url) {
+wrap.appendChild(el("div", { class: "imgf-shot" }, el("img", { src: url, alt: "" })));
+wrap.appendChild(el("div", { class: "imgf-bar" },
+el("span", { class: "imgf-name", title: url }, url.replace(/^\/media\/\d+-/, "")),
+el("button", { class: "btn btn-sm", type: "button", onclick: () => file.click() }, "Replace"),
+el("button", { class: "btn btn-sm", type: "button", onclick: () => openMediaPicker(set) }, "Library"),
+el("button", { class: "btn btn-sm btn-danger", type: "button", onclick: () => set("") }, "Remove")));
+} else {
+wrap.appendChild(el("div", { class: "imgf-drop", onclick: () => file.click() },
+el("strong", {}, "Drop an image here"),
+el("span", {}, "or click to choose one from this computer. JPG, PNG or WebP, up to 15MB.")));
+wrap.appendChild(el("div", { class: "imgf-bar" },
+el("button", { class: "btn btn-sm", type: "button", onclick: () => openMediaPicker(set) }, "Choose from library"),
+el("button", { class: "btn btn-sm", type: "button", onclick: () => {
+linkRow.classList.toggle("hidden");
+if (!linkRow.classList.contains("hidden")) linkInp.focus();
+}}, "Paste a link instead")));
+}
+wrap.appendChild(linkRow);
+wrap.appendChild(file);
+}
+
+file.addEventListener("change", () => { const f = file.files; file.value = ""; if (f.length) upload(f); });
+["dragover", "dragenter"].forEach(ev => wrap.addEventListener(ev, (e) => { e.preventDefault(); wrap.classList.add("drag"); }));
+["dragleave", "drop"].forEach(ev => wrap.addEventListener(ev, (e) => { e.preventDefault(); wrap.classList.remove("drag"); }));
+wrap.addEventListener("drop", (e) => { if (e.dataTransfer && e.dataTransfer.files.length) upload(e.dataTransfer.files); });
+
+render();
+return wrap;
+}
+
 /* A rich text box wired to the media library. Anything stored as plain text
    (or pasted in as Markdown) is laid out on the way in, so old bodies open
    as real headings and bold rather than a wall of ** and ##. */
@@ -687,7 +747,10 @@ const card = el("div", { class: "card" });
 card.appendChild(inp("Title", "title"));
 card.appendChild(el("div", { class: "grid-2" }, inp("URL slug", "slug"), inp("Category", "category")));
 card.appendChild(el("div", { class: "grid-2" }, inp("Author", "author"), inp("Publish date", "published_at", "YYYY-MM-DD")));
-card.appendChild(inp("Cover image URL", "cover_image"));
+card.appendChild(el("div", { class: "field" },
+el("label", {}, "Cover image"),
+imageField(post.cover_image, (u) => { post.cover_image = u; }),
+el("div", { class: "help" }, "Shown on the blog list and at the top of the post. Also used as the preview when the post is shared.")));
 card.appendChild(ta("Excerpt (short summary)", "excerpt"));
 card.appendChild(el("div", { class: "field" },
 el("label", {}, "Body"),
