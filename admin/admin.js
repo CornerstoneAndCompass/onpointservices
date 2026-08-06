@@ -457,6 +457,7 @@ el("button", { class: "btn btn-gold", onclick: saveAll }, "Save changes")
 
 async function saveAll() {
 try {
+RichText.flushAll(); // a rich text box mid-debounce has not written back yet
 const r = await api.put("/api/pages/" + id, { page, sections });
 page.slug = r.slug;
 toast("Saved");
@@ -494,6 +495,21 @@ function iconBtn(label, onClick, extra) {
 return el("button", { class: "btn btn-icon btn-sm " + (extra || ""), type: "button", onclick: (e) => { e.preventDefault(); onClick(); } }, label);
 }
 
+/* A rich text box wired to the media library. Anything stored as plain text
+   (or pasted in as Markdown) is laid out on the way in, so old bodies open
+   as real headings and bold rather than a wall of ** and ##. */
+function richTextEditor(value, onChange) {
+const raw = value == null ? "" : String(value);
+const plain = !!raw.trim() && !RichText.looksLikeHtml(raw);
+const ed = RichText.create({
+value: plain ? RichText.fromMarkdown(raw) : raw,
+onChange: onChange,
+onPickImage: (pick) => openMediaPicker(pick)
+});
+ed.wasPlainText = plain;
+return ed;
+}
+
 function fieldControl(field, data) {
 if (data[field.name] === undefined) {
 data[field.name] = field.type === "repeater" ? [] : field.type === "checkbox" ? false : (field.default != null ? field.default : "");
@@ -513,11 +529,16 @@ wrap.appendChild(repeaterControl(field, data));
 return wrap;
 }
 
+if (field.type === "richtext") {
+wrap.appendChild(richTextEditor(data[field.name], (html) => { data[field.name] = html; }).el);
+if (field.help) wrap.appendChild(el("div", { class: "help" }, field.help));
+return wrap;
+}
+
 let ctrl;
-if (field.type === "textarea" || field.type === "richtext") {
+if (field.type === "textarea") {
 ctrl = el("textarea", {});
 ctrl.value = data[field.name] || "";
-if (field.type === "richtext") ctrl.style.minHeight = "150px";
 ctrl.addEventListener("input", () => { data[field.name] = ctrl.value; });
 } else if (field.type === "select") {
 ctrl = el("select", {});
@@ -537,10 +558,6 @@ if (field.type === "image") ctrl.placeholder = "Pick from library, upload, or pa
 ctrl.addEventListener("input", () => { data[field.name] = ctrl.value; if (field.type === "image") syncImgPreview(); });
 }
 wrap.appendChild(ctrl);
-
-if (field.type === "richtext") {
-wrap.appendChild(el("div", { class: "help" }, "Basic HTML allowed: <p>, <h3>, <strong>, <a>, <ul><li>."));
-}
 
 let syncImgPreview = () => {};
 if (field.type === "image") {
@@ -651,9 +668,8 @@ const i = el("input", { type: type || "text", value: post[key] == null ? "" : po
 i.addEventListener("input", () => { post[key] = i.value; });
 return el("div", { class: "field" }, el("label", {}, label), i, help ? el("div", { class: "help" }, help) : null);
 }
-function ta(label, key, big) {
+function ta(label, key) {
 const i = el("textarea", {});
-if (big) i.style.minHeight = "300px";
 i.value = post[key] == null ? "" : post[key];
 i.addEventListener("input", () => { post[key] = i.value; });
 return el("div", { class: "field" }, el("label", {}, label), i);
@@ -665,13 +681,20 @@ el("div", { class: "page-sub" }, "/blog/" + post.slug)),
 el("button", { class: "btn btn-sm", onclick: () => renderTab() }, "← Back to blog")
 ));
 
+const body = richTextEditor(post.body, (html) => { post.body = html; });
+
 const card = el("div", { class: "card" });
 card.appendChild(inp("Title", "title"));
 card.appendChild(el("div", { class: "grid-2" }, inp("URL slug", "slug"), inp("Category", "category")));
 card.appendChild(el("div", { class: "grid-2" }, inp("Author", "author"), inp("Publish date", "published_at", "YYYY-MM-DD")));
 card.appendChild(inp("Cover image URL", "cover_image"));
 card.appendChild(ta("Excerpt (short summary)", "excerpt"));
-card.appendChild(ta("Body (HTML)", "body", true));
+card.appendChild(el("div", { class: "field" },
+el("label", {}, "Body"),
+body.el,
+body.wasPlainText
+? el("div", { class: "help rte-flag" }, "This post was stored as plain text. We have laid out the headings, bold and lists for you. Press Save post to keep it.")
+: null));
 card.appendChild(el("div", { class: "section-label" }, "SEO"));
 card.appendChild(inp("SEO title", "seo_title"));
 card.appendChild(ta("SEO meta description", "seo_description"));
@@ -690,6 +713,7 @@ catch (e) { toast(e.message, true); }
 el("button", { class: "btn btn-gold", onclick: async () => {
 try {
 post.published = pubInp.checked;
+post.body = body.getValue();
 const r = await api.put("/api/blog/" + id, post);
 post.slug = r.slug;
 toast("Saved");

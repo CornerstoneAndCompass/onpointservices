@@ -1118,3 +1118,91 @@ footer {
   }
 }
 
+
+/* ============================================
+   RICH TEXT FROM THE CMS
+   Blog bodies and richtext fields arrive as raw HTML, so the tags
+   need styling of their own. The global reset strips list bullets
+   and paragraph margins everywhere else on the site.
+   ============================================ */
+.article-body > *:first-child { margin-top: 0; }
+.article-body p { margin-bottom: 1.15em; color: var(--bone-dim); }
+.article-body h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.6vw, 2.15rem);
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  color: var(--bone);
+  margin: 2em 0 0.7em;
+}
+.article-body h3 {
+  font-size: clamp(1.15rem, 1.8vw, 1.4rem);
+  font-weight: 700;
+  color: var(--bone);
+  margin: 1.9em 0 0.5em;
+}
+.article-body h4, .article-body h5, .article-body h6 {
+  font-size: 1.05rem; font-weight: 700; color: var(--bone); margin: 1.7em 0 0.4em;
+}
+.article-body strong { color: var(--bone); font-weight: 600; }
+.article-body em { font-style: italic; }
+.article-body a { color: var(--gold); border-bottom: 1px solid rgba(244, 197, 24, 0.35); }
+.article-body a:hover { border-bottom-color: var(--gold); }
+.article-body ul, .article-body ol { margin: 0 0 1.15em 1.4em; }
+.article-body ul { list-style: disc; }
+.article-body ol { list-style: decimal; }
+.article-body li { margin-bottom: 0.5em; color: var(--bone-dim); }
+.article-body li::marker { color: var(--gold); }
+.article-body blockquote {
+  margin: 1.9em 0;
+  padding: 4px 0 4px 26px;
+  border-left: 2px solid var(--gold);
+  color: var(--bone);
+  font-size: 1.12em;
+  line-height: 1.6;
+}
+.article-body blockquote p { color: inherit; }
+.article-body blockquote p:last-child { margin-bottom: 0; }
+.article-body img { border-radius: 4px; margin: 1.7em 0; }
+.article-body figure { margin: 1.7em 0; }
+.article-body figcaption {
+  font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--muted); margin-top: 10px;
+}
+.article-body hr { border: none; border-top: 1px solid var(--line); margin: 2.4em 0; }
+.article-body code {
+  font-family: var(--font-mono); font-size: 0.86em;
+  background: var(--ink-3); border: 1px solid var(--line-soft);
+  padding: 1px 6px; border-radius: 4px;
+}
+.article-body pre {
+  background: var(--ink-2); border: 1px solid var(--line-soft); border-radius: 8px;
+  padding: 18px; overflow-x: auto; margin: 1.7em 0;
+}
+.article-body pre code { background: none; border: none; padding: 0; }
+.article-body iframe {
+  width: 100%; aspect-ratio: 16 / 9; height: auto;
+  border: 0; border-radius: 8px; margin: 1.7em 0;
+}
+.article-body table { width: 100%; border-collapse: collapse; margin: 1.7em 0; font-size: 0.94em; }
+.article-body th, .article-body td { border: 1px solid var(--line-soft); padding: 10px 12px; text-align: left; }
+.article-body th { color: var(--bone); font-weight: 600; background: var(--ink-2); }
+
+/* Section richtext fields render inside .lede rather than .article-body */
+.lede p { margin-bottom: 0.9em; }
+.lede p:last-child { margin-bottom: 0; }
+.lede strong { color: var(--bone); font-weight: 600; }
+.lede em { font-style: italic; }
+.lede a { color: var(--gold); border-bottom: 1px solid rgba(244, 197, 24, 0.35); }
+.lede ul, .lede ol { margin: 0.8em 0 0.9em 1.4em; }
+.lede ul { list-style: disc; }
+.lede ol { list-style: decimal; }
+.lede li { margin-bottom: 0.4em; }
+.lede li::marker { color: var(--gold); }
+.lede h2, .lede h3, .lede h4 {
+  font-size: 1.15em; font-weight: 700; color: var(--bone); margin: 1.4em 0 0.4em;
+}
+.lede blockquote {
+  margin: 1.2em 0; padding-left: 20px; border-left: 2px solid var(--gold); color: var(--bone);
+}
