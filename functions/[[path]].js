@@ -111,7 +111,16 @@ async function handleMiss(context, pathname) {
 
 export async function onRequestGet(context) {
   const { env, params, request } = context;
-  const pathname = new URL(request.url).pathname;
+  const url = new URL(request.url);
+  const pathname = url.pathname;
+
+  // www and the apex both resolve to this project and both answered 200, which
+  // splits a small site's ranking signals across two hosts. Send www to the
+  // apex rather than leaning on the canonical tag to sort it out afterwards.
+  if (url.hostname.startsWith("www.")) {
+    url.hostname = url.hostname.slice(4);
+    return Response.redirect(url.toString(), 301);
+  }
 
   // Dynamic sitemap from published pages + blog posts.
   if (pathname === "/sitemap.xml") return sitemap(env);

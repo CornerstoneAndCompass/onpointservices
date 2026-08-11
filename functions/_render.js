@@ -595,7 +595,17 @@ function localBusiness(settings) {
     areaServed: { "@type": "City", name: "Auckland" },
     description: "Kiwi family-owned landscaping company. Garden maintenance, design and outdoor construction for residential and commercial properties across Auckland.",
   };
-  if (settings.facebook_url) b.sameAs = [settings.facebook_url];
+  // The CMS ships with a bare "https://www.facebook.com/" in the Facebook box.
+  // Publishing that as sameAs hands Google a link to nothing and weakens the
+  // entity, so only profile URLs with something after the domain go in.
+  const socials = [settings.facebook_url, settings.instagram_url].filter((u) => {
+    try {
+      return !!u && new URL(u).pathname.replace(/\/+$/, "") !== "";
+    } catch {
+      return false;
+    }
+  });
+  if (socials.length) b.sameAs = socials;
   return b;
 }
 

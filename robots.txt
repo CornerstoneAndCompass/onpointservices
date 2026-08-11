@@ -1,0 +1,8 @@
+# Search engines are welcome everywhere except the CMS.
+# Cloudflare appends its own managed block (AI crawler rules) below this.
+
+User-agent: *
+Allow: /
+Disallow: /admin
+
+Sitemap: https://onpointservices.co.nz/sitemap.xml
