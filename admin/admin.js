@@ -165,10 +165,12 @@ updateEnqBadge();
 }
 
 function renderTab() {
+// The analytics tab polls; leaving it must stop that.
+if (state.liveTimer) { clearInterval(state.liveTimer); state.liveTimer = null; }
 const view = document.getElementById("view");
 view.innerHTML = "";
 const tabs = el("div", { class: "tabs" },
-...[["pages", "Pages"], ["blog", "Blog"], ["media", "Media"], ["enquiries", "Enquiries"], ["seo", "SEO"], ["redirects", "Redirects"], ["settings", "Settings"], ["users", "Users"]]
+...[["analytics", "Analytics"], ["pages", "Pages"], ["blog", "Blog"], ["media", "Media"], ["enquiries", "Enquiries"], ["seo", "SEO"], ["redirects", "Redirects"], ["settings", "Settings"], ["users", "Users"]]
 .map(([k, label]) => el("button", {
 id: "tab-" + k,
 class: "tab" + (state.tab === k ? " active" : ""),
@@ -178,7 +180,8 @@ view.appendChild(tabs);
 updateEnqBadge();
 const slot = el("div", { id: "slot" });
 view.appendChild(slot);
-if (state.tab === "pages") viewPagesList(slot);
+if (state.tab === "analytics") viewAnalytics(slot);
+else if (state.tab === "pages") viewPagesList(slot);
 else if (state.tab === "blog") viewBlogList(slot);
 else if (state.tab === "media") viewMedia(slot);
 else if (state.tab === "enquiries") viewEnquiries(slot);
@@ -186,6 +189,275 @@ else if (state.tab === "seo") viewSeo(slot);
 else if (state.tab === "redirects") viewRedirects(slot);
 else if (state.tab === "settings") viewSettings(slot);
 else viewUsers(slot);
+}
+
+/* ============================================================
+ANALYTICS - traffic, leads and what is happening right now
+============================================================ */
+function pct(n, of) { return of > 0 ? Math.round((n / of) * 100) : 0; }
+function num(n) { return (n == null ? 0 : n).toLocaleString(); }
+function mins(ms) {
+if (!ms) return "-";
+const s = Math.round(ms / 1000);
+return s < 60 ? s + "s" : Math.floor(s / 60) + "m " + (s % 60) + "s";
+}
+function delta(now, before) {
+now = now || 0; before = before || 0;
+if (!before) return now ? { txt: "new", dir: "up" } : null;
+const d = Math.round(((now - before) / before) * 100);
+if (d === 0) return { txt: "0%", dir: "flat" };
+return { txt: (d > 0 ? "+" : "") + d + "%", dir: d > 0 ? "up" : "down" };
+}
+function shortPath(p) { return !p ? "/" : p.length > 42 ? p.slice(0, 40) + "…" : p; }
+
+function statCard(label, value, sub, change) {
+return el("div", { class: "an-stat" },
+el("div", { class: "an-stat-label" }, label),
+el("div", { class: "an-stat-num" }, value),
+el("div", { class: "an-stat-sub" },
+sub || "",
+change ? el("span", { class: "an-delta " + change.dir }, " " + change.txt) : null));
+}
+
+/* A plain table. cols = [{ head, get, cls }] */
+function anTable(cols, list, empty) {
+if (!list || !list.length) return el("div", { class: "an-empty" }, empty || "Nothing yet.");
+return el("table", { class: "an-table" },
+el("thead", {}, el("tr", {}, ...cols.map((c) => el("th", { class: c.cls || "" }, c.head)))),
+el("tbody", {}, ...list.map((r) => el("tr", {}, ...cols.map((c) => el("td", { class: c.cls || "" }, c.get(r)))))));
+}
+
+/* Daily visitors as bars with conversions marked on top. Inline SVG so it
+   prints with the rest of the page and needs no chart library. */
+function anChart(daily) {
+if (!daily || !daily.length) return el("div", { class: "an-empty" }, "No traffic recorded yet.");
+const W = 900, H = 190, PAD = 26;
+const max = Math.max(1, ...daily.map((d) => d.pageviews || 0));
+const bw = (W - PAD * 2) / daily.length;
+const parts = [];
+daily.forEach((d, i) => {
+const x = PAD + i * bw;
+const pv = ((d.pageviews || 0) / max) * (H - PAD * 2);
+const vis = ((d.visitors || 0) / max) * (H - PAD * 2);
+parts.push('<rect x="' + (x + bw * 0.15) + '" y="' + (H - PAD - pv) + '" width="' + (bw * 0.7) +
+'" height="' + pv + '" rx="2" fill="rgba(244,197,24,0.28)"><title>' + d.day + ": " + (d.pageviews || 0) + ' views</title></rect>');
+parts.push('<rect x="' + (x + bw * 0.15) + '" y="' + (H - PAD - vis) + '" width="' + (bw * 0.7) +
+'" height="' + vis + '" rx="2" fill="#F4C518"><title>' + d.day + ": " + (d.visitors || 0) + ' visitors</title></rect>');
+const leads = (d.calls || 0) + (d.enquiries || 0);
+if (leads) parts.push('<circle cx="' + (x + bw / 2) + '" cy="' + (H - PAD - vis - 8) +
+'" r="4" fill="#4CAF6E"><title>' + d.day + ": " + leads + ' leads</title></circle>');
+});
+const first = daily[0].day, last = daily[daily.length - 1].day;
+parts.push('<text x="' + PAD + '" y="' + (H - 8) + '" fill="#6E6E6E" font-size="10">' + first + "</text>");
+parts.push('<text x="' + (W - PAD) + '" y="' + (H - 8) + '" fill="#6E6E6E" font-size="10" text-anchor="end">' + last + "</text>");
+return el("div", { class: "an-chart", html: '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none">' + parts.join("") + "</svg>" });
+}
+
+function anSpark(points) {
+if (!points || !points.length) return el("span", { class: "an-spark-empty" }, "quiet");
+const max = Math.max(1, ...points.map((p) => p.n));
+return el("span", { class: "an-spark" },
+...points.map((p) => el("i", { style: "height:" + Math.max(2, Math.round((p.n / max) * 22)) + "px", title: p.minute + ": " + p.n })));
+}
+
+async function viewAnalytics(slot) {
+slot.appendChild(el("div", { class: "spinner" }, "Building the report..."));
+let d;
+try { d = await api.get("/api/stats?days=" + (state.anDays || 30)); }
+catch (e) { slot.innerHTML = ""; slot.appendChild(el("div", { class: "empty" }, e.message)); return; }
+slot.innerHTML = "";
+
+const k = d.kpis || {}, p = d.prev || {}, f = d.funnel || {}, r = d.returning || {};
+const leads = (k.calls || 0) + (k.enquiries || 0) + (k.emails || 0);
+const prevLeads = (p.calls || 0) + (p.enquiries || 0);
+
+/* ---- header + range ---- */
+const ranges = [[7, "7 days"], [30, "30 days"], [90, "90 days"], [365, "12 months"]];
+slot.appendChild(el("div", { class: "head-flex" },
+el("div", {},
+el("div", { class: "page-title" }, "Analytics"),
+el("div", { class: "page-sub" }, "Where your visitors come from, what they read, and who turns into a lead.")),
+el("div", { class: "row-actions" },
+...ranges.map(([days, label]) => el("button", {
+class: "btn btn-sm" + ((state.anDays || 30) === days ? " btn-gold" : ""),
+onclick: () => { state.anDays = days; renderTab(); }
+}, label)),
+el("button", { class: "btn btn-sm", onclick: () => window.print() }, "Print"))
+));
+
+/* ---- right now ---- */
+const liveWrap = el("div", { class: "an-live" });
+slot.appendChild(el("div", { class: "section-label" }, "Right now"));
+slot.appendChild(liveWrap);
+
+function paintLive(L) {
+liveWrap.innerHTML = "";
+const nowN = (L.now && L.now.visitors) || 0;
+const t = L.today || {};
+liveWrap.appendChild(el("div", { class: "an-live-head" },
+el("div", { class: "an-live-now" },
+el("span", { class: "an-dot" + (nowN ? " on" : "") }),
+el("strong", {}, num(nowN)),
+el("span", {}, nowN === 1 ? " person on the site" : " people on the site")),
+anSpark(L.last60 || []),
+el("div", { class: "an-live-today" },
+"Today: " + num(t.visitors) + " visitors · " + num(t.pageviews) + " views · " +
+num(t.calls) + " phone taps · " + num(t.enquiries) + " enquiries")));
+
+const cols = el("div", { class: "an-live-cols" });
+cols.appendChild(el("div", {},
+el("div", { class: "an-sub" }, "Pages being viewed"),
+anTable([
+{ head: "Page", get: (x) => shortPath(x.path) },
+{ head: "People", get: (x) => num(x.n), cls: "num" }
+], L.pages, "Nobody on the site this minute.")));
+cols.appendChild(el("div", {},
+el("div", { class: "an-sub" }, "Last 30 minutes"),
+el("div", { class: "an-feed" }, ...((L.recent || []).length
+? L.recent.map((e) => el("div", { class: "an-feed-row" },
+el("span", { class: "an-tag " + e.type }, ({
+pageview: "view", phone_click: "CALL", enquiry_submit: "LEAD",
+email_click: "email", quote_cta: "quote"
+})[e.type] || e.type),
+el("span", { class: "an-feed-path" }, shortPath(e.path)),
+el("span", { class: "an-feed-meta" }, [e.device, e.region || e.country].filter(Boolean).join(" · "))))
+: [el("div", { class: "an-empty" }, "No activity in the last half hour.")]))));
+liveWrap.appendChild(cols);
+}
+paintLive(d.live || {});
+
+// Keep it live without rebuilding the whole report.
+if (state.liveTimer) clearInterval(state.liveTimer);
+state.liveTimer = setInterval(async () => {
+if (!document.body.contains(liveWrap)) { clearInterval(state.liveTimer); state.liveTimer = null; return; }
+try { paintLive(await api.get("/api/stats?live=1")); } catch (e) {}
+}, 15000);
+
+/* ---- headline numbers ---- */
+slot.appendChild(el("div", { class: "section-label" }, "Last " + d.days + " days"));
+slot.appendChild(el("div", { class: "an-stats" },
+statCard("Visitors", num(k.visitors), "unique people", delta(k.visitors, p.visitors)),
+statCard("Pageviews", num(k.pageviews), num(f.visits) + " visits", delta(k.pageviews, p.pageviews)),
+statCard("Avg. time on page", mins(d.dwell && d.dwell.avg_ms), "engaged time"),
+statCard("Phone taps", num(k.calls), "tapped the number", delta(k.calls, p.calls)),
+statCard("Enquiries", num(k.enquiries), "form submissions", delta(k.enquiries, p.enquiries)),
+statCard("Leads", num(leads), pct(leads, f.visits) + "% of visits", delta(leads, prevLeads))
+));
+
+slot.appendChild(anChart(d.daily));
+slot.appendChild(el("div", { class: "an-legend" },
+el("span", {}, el("i", { class: "sw solid" }), "Visitors"),
+el("span", {}, el("i", { class: "sw faint" }), "Pageviews"),
+el("span", {}, el("i", { class: "sw dot" }), "Leads")));
+
+/* ---- funnel ---- */
+const bounced = f.bounced || 0;
+slot.appendChild(el("div", { class: "section-label" }, "What visits turn into"));
+slot.appendChild(el("div", { class: "card an-funnel" },
+...[["Visits", f.visits, 100],
+["Read on", f.engaged, pct(f.engaged, f.visits)],
+["Got in touch", f.leads, pct(f.leads, f.visits)]].map(([label, n, share]) =>
+el("div", { class: "an-funnel-step" },
+el("div", { class: "an-funnel-bar", style: "width:" + Math.max(3, share) + "%" }),
+el("div", { class: "an-funnel-label" }, label,
+el("strong", {}, num(n)),
+el("span", {}, share + "%")))),
+el("div", { class: "inline-note", style: "margin-top:12px;" },
+num(bounced) + " of " + num(f.visits) + " visits (" + pct(bounced, f.visits) +
+"%) left from the first screen. " + num(r.repeats) + " of " + num(r.total) + " visitors had been here before.")
+));
+
+/* ---- acquisition ---- */
+slot.appendChild(el("div", { class: "section-label" }, "Where visitors come from"));
+const two = el("div", { class: "an-two" });
+two.appendChild(el("div", { class: "card" },
+el("div", { class: "an-sub" }, "Channel"),
+anTable([
+{ head: "Source", get: (x) => x.source },
+{ head: "Visits", get: (x) => num(x.visits), cls: "num" },
+{ head: "Leads", get: (x) => num((x.calls || 0) + (x.enquiries || 0)), cls: "num" },
+{ head: "Rate", get: (x) => pct((x.calls || 0) + (x.enquiries || 0), x.visits) + "%", cls: "num" }
+], d.sources, "No visits recorded yet.")));
+two.appendChild(el("div", { class: "card" },
+el("div", { class: "an-sub" }, "Referring sites"),
+anTable([
+{ head: "Site", get: (x) => x.ref_host },
+{ head: "Visits", get: (x) => num(x.visits), cls: "num" }
+], d.referrers, "No referrals yet. Every visit came direct or from search.")));
+slot.appendChild(two);
+
+if ((d.campaigns || []).length) {
+slot.appendChild(el("div", { class: "card" },
+el("div", { class: "an-sub" }, "Campaigns"),
+anTable([
+{ head: "Campaign", get: (x) => x.campaign },
+{ head: "Visits", get: (x) => num(x.visits), cls: "num" },
+{ head: "Enquiries", get: (x) => num(x.enquiries), cls: "num" }
+], d.campaigns)));
+}
+
+/* ---- content ---- */
+slot.appendChild(el("div", { class: "section-label" }, "Pages"));
+slot.appendChild(el("div", { class: "card" },
+anTable([
+{ head: "Page", get: (x) => shortPath(x.path) },
+{ head: "Views", get: (x) => num(x.views), cls: "num" },
+{ head: "Visits", get: (x) => num(x.sessions), cls: "num" },
+{ head: "Avg. time", get: (x) => mins(x.avg_ms), cls: "num" }
+], d.pages, "No pageviews recorded yet.")));
+
+const two2 = el("div", { class: "an-two" });
+two2.appendChild(el("div", { class: "card" },
+el("div", { class: "an-sub" }, "Where people tap the phone number"),
+anTable([
+{ head: "Page", get: (x) => shortPath(x.path) },
+{ head: "Taps", get: (x) => num(x.calls), cls: "num" }
+], d.callPages, "No phone taps yet.")));
+two2.appendChild(el("div", { class: "card" },
+el("div", { class: "an-sub" }, "Least-read pages (avg. scroll depth)"),
+anTable([
+{ head: "Page", get: (x) => shortPath(x.path) },
+{ head: "Depth", get: (x) => (x.avg_depth || 0) + "%", cls: "num" }
+], d.scroll, "Not enough scrolling recorded yet.")));
+slot.appendChild(two2);
+
+if ((d.blog || []).length) {
+slot.appendChild(el("div", { class: "section-label" }, "Blog"));
+slot.appendChild(el("div", { class: "card" },
+anTable([
+{ head: "Post", get: (x) => shortPath(x.path) },
+{ head: "Views", get: (x) => num(x.views), cls: "num" },
+{ head: "Avg. read", get: (x) => mins(x.avg_ms), cls: "num" }
+], d.blog)));
+}
+
+/* ---- audience ---- */
+slot.appendChild(el("div", { class: "section-label" }, "Audience"));
+const two3 = el("div", { class: "an-two" });
+two3.appendChild(el("div", { class: "card" },
+el("div", { class: "an-sub" }, "Device"),
+anTable([
+{ head: "Device", get: (x) => x.device },
+{ head: "Visits", get: (x) => num(x.visits), cls: "num" },
+{ head: "Enquiries", get: (x) => num(x.enquiries), cls: "num" }
+], d.devices, "No visits yet.")));
+two3.appendChild(el("div", { class: "card" },
+el("div", { class: "an-sub" }, "Where they are"),
+anTable([
+{ head: "Place", get: (x) => x.place },
+{ head: "Visits", get: (x) => num(x.visits), cls: "num" }
+], d.places, "No visits yet.")));
+slot.appendChild(two3);
+
+if ((d.enquiries || []).length) {
+slot.appendChild(el("div", { class: "section-label" }, "Recent enquiries"));
+slot.appendChild(el("div", { class: "card" },
+anTable([
+{ head: "When", get: (x) => x.created_at },
+{ head: "Name", get: (x) => x.name || "(no name)" },
+{ head: "From", get: (x) => x.source || "" }
+], d.enquiries)));
+}
 }
 
 /* ============================================================

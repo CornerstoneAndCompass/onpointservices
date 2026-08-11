@@ -717,7 +717,7 @@ function shell(page, settings, inner, opts) {
     inner +
     "\n" +
     renderFooter(settings) +
-    `\n<script src="/js/main.js"></script>\n<script src="/js/cms.js" defer></script>\n</body>\n</html>`
+    `\n<script src="/js/main.js"></script>\n<script src="/js/cms.js" defer></script>\n<script src="/js/analytics.js" defer></script>\n</body>\n</html>`
   );
 }
 

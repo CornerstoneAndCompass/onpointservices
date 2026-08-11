@@ -20,7 +20,8 @@ export async function onRequest(context) {
 
   const isPublic =
     PUBLIC.has(path) ||
-    (path === "/api/enquiry" && request.method === "POST"); // public contact form
+    (path === "/api/enquiry" && request.method === "POST") || // public contact form
+    (path === "/api/track" && request.method === "POST"); // analytics beacon from the website
 
   const user = await currentUser(env, request);
   context.data.user = user;

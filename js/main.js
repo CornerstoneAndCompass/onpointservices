@@ -136,6 +136,9 @@
         // filled form and invite a duplicate send. The button stays disabled
         // while the browser navigates away.
         form.reset();
+        // Count the lead only now that the server has accepted it. analytics.js
+        // beacons it out, which survives the navigation below.
+        document.dispatchEvent(new CustomEvent('op:enquiry'));
         window.location.assign('/thank-you');
       } catch (err) {
         if (status) {
