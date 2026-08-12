@@ -139,6 +139,11 @@
         // Count the lead only now that the server has accepted it. analytics.js
         // beacons it out, which survives the navigation below.
         document.dispatchEvent(new CustomEvent('op:enquiry'));
+        // One id per accepted enquiry. The thank-you page sends it to Google Ads
+        // as transaction_id so a refresh there is not counted twice.
+        try {
+          sessionStorage.setItem('op_conv', 'lead-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8));
+        } catch (e) {}
         window.location.assign('/thank-you');
       } catch (err) {
         if (status) {

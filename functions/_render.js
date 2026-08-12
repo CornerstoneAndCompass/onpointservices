@@ -29,6 +29,11 @@ const arrow = '<span class="arrow"></span>';
    conversion events below. Keep in sync with the CMS page slug. */
 export const THANK_YOU_SLUG = "thank-you";
 
+// Google Ads conversion tracking, shared by cy@roasmedia.com. The base tag goes
+// on every page; the conversion label only fires on the thank-you page.
+const GOOGLE_ADS_ID = "AW-18384816629";
+const GOOGLE_ADS_CONVERSION = "AW-18384816629/CpeFCLf5m-AcEPWTyL5E";
+
 /* gold star row (rating 1–5), used by the Google reviews section */
 function starRow(rating, size = 16) {
   const n = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
@@ -694,10 +699,29 @@ fbq('track', 'Lead');` : ""}
 <noscript><img height="1" width="1" style="display:none"
 src="https://www.facebook.com/tr?id=2425873347908572&ev=PageView&noscript=1"
 /></noscript>
-<!-- End Meta Pixel Code -->${isConversion ? `
-<!-- Google Ads conversion, thank-you page only. TODO: paste the event snippet
-     from Google Ads > Goals > Conversions here (the gtag.js base tag needs to
-     go in the block above this one, on every page). -->` : ""}
+<!-- End Meta Pixel Code -->
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ADS_ID}"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '${GOOGLE_ADS_ID}');
+</script>${isConversion ? `
+<!-- Event snippet for Submit lead form conversion page -->
+<script>
+(function () {
+  var p = { send_to: '${GOOGLE_ADS_CONVERSION}', value: 1.0, currency: 'NZD' };
+  // main.js stamps a one-off id at submit time. Passing it as transaction_id
+  // lets Google discard the duplicate when someone refreshes the thank-you
+  // page or reaches it again with the back button.
+  try {
+    var id = sessionStorage.getItem('op_conv');
+    if (id) p.transaction_id = id;
+  } catch (e) {}
+  gtag('event', 'conversion', p);
+})();
+</script>` : ""}
 </head>
 <body>`;
 }
